@@ -1,0 +1,26 @@
+# Î¢²©ÆÀÂÛÅÀ³æÒÀÀµ°ü
+# »ù´¡ÍøÂçÇëÇó¿â
+requests>=2.25.1
+
+# HTML½âÎö¿â
+lxml>=4.6.3
+pyquery>=1.4.3
+
+# Í¼Ïñ´¦Àí¿â
+Pillow>=8.3.2
+
+# RSA¼ÓÃÜ¿â
+rsa>=4.7.2
+
+# JavaScriptÖ´ÐÐ¿â
+PyExecJS>=1.5.1
+
+# Êý¾Ý´¦Àí¿â
+pandas>=1.3.0
+
+# API 后端框架（可选，用于 FastAPI 服务）
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# ÆäËû±ê×¼¿â£¨PythonÄÚÖÃ£¬ÎÞÐè°²×°£©
+# time, traceback, base64, binascii, re, random, urllib.parse, http.cookiejar, csv, os, datetime, threading, math
