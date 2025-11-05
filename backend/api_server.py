@@ -11,12 +11,13 @@ WeiboDeepAnalyzer FastAPI 后端实现示例
 
 from fastapi import FastAPI, HTTPException, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, Dict, Any
 import uuid
 import asyncio
 from datetime import datetime
 import traceback
+import os
 
 from WeiboDeepAnalyzer import WeiboDeepAnalyzer
 
@@ -43,11 +44,38 @@ tasks: Dict[str, Dict[str, Any]] = {}
 
 class AnalyzeRequest(BaseModel):
     """分析请求模型"""
-    wid: str  # 微博ID
+    wid: Optional[str] = None  # 微博ID（可选，如果未提供则从环境变量或.env文件读取）
     max_comment_pages: Optional[int] = None  # 评论最大页数
     max_repost_pages: Optional[int] = None    # 转发最大页数
     download_images: bool = False             # 是否下载图片
     cookie: Optional[str] = None              # 自定义Cookie（可选）
+    
+    @field_validator('wid')
+    @classmethod
+    def validate_wid(cls, v: Optional[str]) -> Optional[str]:
+        """验证微博ID是否有效"""
+        if v is None:
+            return None  # 允许None，表示从.env读取
+        
+        if not isinstance(v, str):
+            raise ValueError('微博ID必须是字符串类型')
+        
+        # 移除首尾空白
+        v = v.strip()
+        
+        if not v:
+            return None  # 空字符串也视为None，表示从.env读取
+        
+        # 检查是否是无效的占位符值
+        invalid_values = ['string', 'wid', '微博ID', 'weibo_id', 'id']
+        if v.lower() in [x.lower() for x in invalid_values]:
+            raise ValueError(f'微博ID不能是占位符值 "{v}"，请输入真实的微博ID')
+        
+        # 检查是否只包含空格
+        if v.isspace():
+            return None  # 只有空格也视为None
+        
+        return v
 
 
 class TaskResponse(BaseModel):
@@ -70,6 +98,45 @@ class TaskStatusResponse(BaseModel):
 
 
 # ==================== 辅助函数 ====================
+
+def _read_env_value(key: str):
+    """
+    从环境变量或.env文件读取指定键的值
+    
+    Args:
+        key: 环境变量键名
+    
+    Returns:
+        str: 环境变量的值，如果不存在则返回空字符串
+    """
+    # 优先从环境变量读取
+    env_value = os.environ.get(key)
+    if env_value:
+        return env_value
+    
+    # 从.env文件读取
+    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    try:
+        with open(env_path, 'r', encoding='utf-8') as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' in line:
+                    file_key, value = line.split('=', 1)
+                    if file_key.strip() == key:
+                        return value.strip().strip('"').strip("'")
+    except Exception:
+        pass
+    return ''
+
+
+def _read_wid_from_env_file():
+    """从环境变量或.env文件读取微博ID"""
+    return _read_env_value('WID')
+
+
+# ==================== 请求模型 ====================
 
 def _create_task(task_id: str, request_info: Optional[Dict] = None) -> Dict[str, Any]:
     """创建新任务"""
@@ -231,17 +298,38 @@ async def create_analysis_task(request: AnalyzeRequest, background_tasks: Backgr
     返回任务ID，前端可以轮询查询进度和结果
     
     请求参数：
-    - wid: 微博ID（必填）
+    - wid: 微博ID（可选，如果未提供则从环境变量或.env文件读取）
     - max_comment_pages: 评论最大爬取页数（可选，None表示全部）
     - max_repost_pages: 转发最大爬取页数（可选，None表示全部）
     - download_images: 是否下载图片（默认False）
     - cookie: 自定义Cookie（可选，不传则使用环境变量或.env文件）
     """
+    # 如果未提供wid，尝试从.env文件读取
+    wid = request.wid
+    if not wid:
+        wid = _read_wid_from_env_file()
+    
+    if not wid or not wid.strip():
+        raise HTTPException(
+            status_code=400, 
+            detail="微博ID不能为空，请在请求中提供wid参数或在.env文件中设置WID"
+        )
+    
+    wid = wid.strip()
+    
+    # 验证wid不是占位符值
+    invalid_values = ['string', 'wid', '微博ID', 'weibo_id', 'id']
+    if wid.lower() in [x.lower() for x in invalid_values]:
+        raise HTTPException(
+            status_code=400,
+            detail=f'微博ID不能是占位符值 "{wid}"，请输入真实的微博ID或在.env文件中设置WID'
+        )
+    
     task_id = str(uuid.uuid4())
     
-    # 保存请求信息
+    # 保存请求信息（使用实际使用的wid）
     request_info = {
-        'wid': request.wid,
+        'wid': wid,
         'max_comment_pages': request.max_comment_pages,
         'max_repost_pages': request.max_repost_pages,
         'download_images': request.download_images
@@ -249,8 +337,17 @@ async def create_analysis_task(request: AnalyzeRequest, background_tasks: Backgr
     
     _create_task(task_id, request_info=request_info)
     
+    # 创建修改后的请求对象，使用实际wid
+    actual_request = AnalyzeRequest(
+        wid=wid,
+        max_comment_pages=request.max_comment_pages,
+        max_repost_pages=request.max_repost_pages,
+        download_images=request.download_images,
+        cookie=request.cookie
+    )
+    
     # 在后台执行分析任务
-    background_tasks.add_task(_run_analysis, task_id, request)
+    background_tasks.add_task(_run_analysis, task_id, actual_request)
     
     return TaskResponse(
         task_id=task_id,
@@ -367,10 +464,38 @@ async def analyze_sync(request: AnalyzeRequest):
     
     直接返回完整结果，适合数据量小的情况
     ⚠️ 警告：如果数据量大，可能超时
+    
+    请求参数：
+    - wid: 微博ID（可选，如果未提供则从环境变量或.env文件读取）
+    - max_comment_pages: 评论最大爬取页数（可选）
+    - max_repost_pages: 转发最大爬取页数（可选）
+    - download_images: 是否下载图片（默认False）
+    - cookie: 自定义Cookie（可选）
     """
     try:
+        # 如果未提供wid，尝试从.env文件读取
+        wid = request.wid
+        if not wid:
+            wid = _read_wid_from_env_file()
+        
+        if not wid or not wid.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="微博ID不能为空，请在请求中提供wid参数或在.env文件中设置WID"
+            )
+        
+        wid = wid.strip()
+        
+        # 验证wid不是占位符值
+        invalid_values = ['string', 'wid', '微博ID', 'weibo_id', 'id']
+        if wid.lower() in [x.lower() for x in invalid_values]:
+            raise HTTPException(
+                status_code=400,
+                detail=f'微博ID不能是占位符值 "{wid}"，请输入真实的微博ID或在.env文件中设置WID'
+            )
+        
         analyzer = WeiboDeepAnalyzer(
-            wid=request.wid,
+            wid=wid,
             cookie=request.cookie,
             download_images=request.download_images
         )
@@ -395,6 +520,8 @@ async def analyze_sync(request: AnalyzeRequest):
         
         return result
         
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

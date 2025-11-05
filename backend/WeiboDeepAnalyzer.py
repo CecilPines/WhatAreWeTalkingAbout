@@ -20,11 +20,22 @@ from lxml import etree
 requests.packages.urllib3.disable_warnings()
 
 
-def _read_cookie_from_env_file():
-    """从环境变量或.env文件读取Cookie"""
-    env_cookie = os.environ.get('COOKIE')
-    if env_cookie:
-        return env_cookie
+def _read_env_value(key: str):
+    """
+    从环境变量或.env文件读取指定键的值
+    
+    Args:
+        key: 环境变量键名
+    
+    Returns:
+        str: 环境变量的值，如果不存在则返回空字符串
+    """
+    # 优先从环境变量读取
+    env_value = os.environ.get(key)
+    if env_value:
+        return env_value
+    
+    # 从.env文件读取
     env_path = os.path.join(os.path.dirname(__file__), '.env')
     try:
         with open(env_path, 'r', encoding='utf-8') as f:
@@ -33,12 +44,22 @@ def _read_cookie_from_env_file():
                 if not line or line.startswith('#'):
                     continue
                 if '=' in line:
-                    key, value = line.split('=', 1)
-                    if key.strip() == 'COOKIE':
+                    file_key, value = line.split('=', 1)
+                    if file_key.strip() == key:
                         return value.strip().strip('"').strip("'")
     except Exception:
         pass
     return ''
+
+
+def _read_cookie_from_env_file():
+    """从环境变量或.env文件读取Cookie"""
+    return _read_env_value('COOKIE')
+
+
+def _read_wid_from_env_file():
+    """从环境变量或.env文件读取微博ID"""
+    return _read_env_value('WID')
 
 
 class WeiboDeepAnalyzer:
@@ -53,16 +74,33 @@ class WeiboDeepAnalyzer:
     5. 输出结构化数据（JSON + CSV）
     """
     
-    def __init__(self, wid, cookie=None, output_dir='weibo_analysis', download_images=False):
+    def __init__(self, wid=None, cookie=None, output_dir='weibo_analysis', download_images=False):
         """
         初始化分析器
         
         Args:
-            wid: 微博ID（可以是数字ID或mid）
+            wid: 微博ID（可以是数字ID或mid，可选，如果未提供则从环境变量或.env文件读取）
             cookie: 微博Cookie（可选，从环境变量读取）
             output_dir: 输出目录
             download_images: 是否下载图片到本地（默认False）
         """
+        # 如果未提供wid，尝试从环境变量或.env文件读取
+        if wid is None:
+            wid = _read_wid_from_env_file()
+        
+        # 验证wid参数
+        if not wid or not isinstance(wid, str):
+            raise ValueError('微博ID不能为空，请提供有效的微博ID或在.env文件中设置WID')
+        
+        wid = wid.strip()
+        if not wid:
+            raise ValueError('微博ID不能为空，请提供有效的微博ID或在.env文件中设置WID')
+        
+        # 检查是否是无效的占位符值
+        invalid_values = ['string', 'wid', '微博ID', 'weibo_id', 'id']
+        if wid.lower() in [x.lower() for x in invalid_values]:
+            raise ValueError(f'微博ID不能是占位符值 "{wid}"，请输入真实的微博ID（例如：QbelLys5Z）')
+        
         self.wid = wid
         self.cookie = cookie if cookie else _read_cookie_from_env_file()
         self.download_images = download_images
@@ -309,35 +347,96 @@ class WeiboDeepAnalyzer:
                     publish_source = time_source_text.split('来自')[1].strip()
             
             # 提取互动数据（点赞、转发、评论）
-            # 使用更精确的xpath选择器
+            # 优先从 weibo.cn/attitude/{wid} 页面获取（最准确）
             like_count = 0
             repost_count = 0
             comment_count = 0
             
-            # 方法1：从链接文本中提取
-            like_links = weibo_block.xpath('.//a[contains(@href, "/attitude/")]//text()')
-            for text in like_links:
-                match = re.search(r'赞\[(\d+)\]', text)
-                if match:
-                    like_count = int(match.group(1))
-                    break
+            # 方法1：从 weibo.cn/attitude/{wid} 页面获取统计数据（最准确的方法）
+            print('  正在获取统计数据...')
+            attitude_url = f'https://weibo.cn/attitude/{self.wid}'
+            attitude_selector = self._parse_html(attitude_url)
             
-            repost_links = weibo_block.xpath('.//a[contains(@href, "/repost/")]//text()')
-            for text in repost_links:
-                match = re.search(r'转发\[(\d+)\]', text)
-                if match:
-                    repost_count = int(match.group(1))
-                    break
+            if attitude_selector:
+                # 查找 id="attitude" 的div
+                attitude_div = attitude_selector.xpath('//div[@id="attitude"]')
+                if attitude_div:
+                    attitude_text = ''.join(attitude_div[0].xpath('string(.)'))
+                    
+                    # 提取转发数
+                    repost_match = re.search(r'转发\[(\d+)\]', attitude_text)
+                    if repost_match:
+                        repost_count = int(repost_match.group(1))
+                    
+                    # 提取评论数
+                    comment_match = re.search(r'评论\[(\d+)\]', attitude_text)
+                    if comment_match:
+                        comment_count = int(comment_match.group(1))
+                    
+                    # 提取点赞数（在<span class="pms">中）
+                    like_match = re.search(r'赞\[(\d+)\]', attitude_text)
+                    if like_match:
+                        like_count = int(like_match.group(1))
+                
+                time.sleep(0.5)  # 短暂延时
             
-            # 评论数可能在<span class="pms">中
-            comment_spans = weibo_block.xpath('.//span[@class="pms"]//text()')
-            for text in comment_spans:
-                match = re.search(r'评论\[(\d+)\]', text)
-                if match:
-                    comment_count = int(match.group(1))
-                    break
+            # 方法2：如果attitude页面没有找到，尝试从当前页面的id="attitude"div中查找
+            if like_count == 0 or repost_count == 0 or comment_count == 0:
+                attitude_div = selector.xpath('//div[@id="attitude"]')
+                if attitude_div:
+                    attitude_text = ''.join(attitude_div[0].xpath('string(.)'))
+                    
+                    if repost_count == 0:
+                        repost_match = re.search(r'转发\[(\d+)\]', attitude_text)
+                        if repost_match:
+                            repost_count = int(repost_match.group(1))
+                    
+                    if comment_count == 0:
+                        comment_match = re.search(r'评论\[(\d+)\]', attitude_text)
+                        if comment_match:
+                            comment_count = int(comment_match.group(1))
+                    
+                    if like_count == 0:
+                        like_match = re.search(r'赞\[(\d+)\]', attitude_text)
+                        if like_match:
+                            like_count = int(like_match.group(1))
             
-            # 方法2：如果上述方法失败，使用footer_text作为备用
+            # 方法3：如果上述方法都失败，从weibo_block中查找（备用方法）
+            if like_count == 0 or repost_count == 0 or comment_count == 0:
+                # 从链接文本中提取
+                like_links = weibo_block.xpath('.//a[contains(@href, "/attitude/")]//text()')
+                for text in like_links:
+                    match = re.search(r'赞\[(\d+)\]', text)
+                    if match:
+                        like_count = int(match.group(1))
+                        break
+                
+                if repost_count == 0:
+                    repost_links = weibo_block.xpath('.//a[contains(@href, "/repost/")]//text()')
+                    for text in repost_links:
+                        match = re.search(r'转发\[(\d+)\]', text)
+                        if match:
+                            repost_count = int(match.group(1))
+                            break
+                
+                if comment_count == 0:
+                    comment_links = weibo_block.xpath('.//a[contains(@href, "/comment/")]//text()')
+                    for text in comment_links:
+                        match = re.search(r'评论\[(\d+)\]', text)
+                        if match:
+                            comment_count = int(match.group(1))
+                            break
+                    
+                    # 评论数可能在<span class="pms">中
+                    if comment_count == 0:
+                        comment_spans = weibo_block.xpath('.//span[@class="pms"]//text()')
+                        for text in comment_spans:
+                            match = re.search(r'评论\[(\d+)\]', text)
+                            if match:
+                                comment_count = int(match.group(1))
+                                break
+            
+            # 方法4：如果上述方法都失败，使用footer_text作为最后的备用
             if like_count == 0 or repost_count == 0 or comment_count == 0:
                 footer_text = ''.join(weibo_block.xpath('.//div[last()]//text()'))
                 
@@ -601,6 +700,7 @@ class WeiboDeepAnalyzer:
             return []
         
         reposts = []
+        seen_reposts = set()  # 用于去重：存储(user_id, publish_time)元组
         page = 1
         
         while True:
@@ -616,52 +716,68 @@ class WeiboDeepAnalyzer:
                 print('失败')
                 break
             
-            # 获取所有转发块
+            # 获取所有转发块（参考WeiboRepostSpider.py的逻辑）
+            # 只选择包含span[@class='cc']和span[@class='ct']的块，这些才是真正的转发条目
             repost_blocks = selector.xpath("//div[@class='c']")
             page_reposts = 0
             has_content = False
             
             for block in repost_blocks:
                 try:
-                    # 需要包含用户链接和转发内容
+                    # 检查是否包含必要的元素（参考WeiboRepostSpider.py）
                     user_link = block.xpath('./a[1]/@href')
                     user_name = block.xpath('./a[1]/text()')
+                    cc_text = block.xpath(".//span[@class='cc']/a/text()")  # 点赞链接
+                    ct_text = block.xpath(".//span[@class='ct']/text()")     # 时间文本
                     
-                    if not user_link or not user_name:
+                    # 过滤非转发块：必须包含用户链接、用户名、cc和ct
+                    if not user_link or not user_name or not cc_text or not ct_text:
                         continue
                     
                     has_content = True
                     
-                    # 提取用户ID
+                    # 提取用户ID（从链接末尾提取，如 /5695608993）
                     user_id = None
-                    match = re.search(r'/(\d+)', user_link[0])
+                    match = re.search(r'/(\d+)$', user_link[0])
                     if match:
                         user_id = match.group(1)
+                    
+                    # 提取点赞数（从span[@class='cc']中提取）
+                    like_count = 0
+                    like_match = re.search(r'赞\[(\d+)\]', cc_text[0])
+                    if like_match:
+                        like_count = int(like_match.group(1))
+                    
+                    # 提取发布时间
+                    publish_time = ''
+                    if ct_text:
+                        publish_time = self._parse_time(ct_text[0])
+                    
+                    # 使用(user_id, publish_time)作为唯一标识去重
+                    unique_key = (user_id, publish_time)
+                    if unique_key in seen_reposts:
+                        continue  # 跳过重复的转发
+                    seen_reposts.add(unique_key)
                     
                     # 提取转发内容
                     full_text = ''.join(block.xpath('string(.)'))
                     
-                    # 提取时间和来源
-                    time_text = block.xpath('.//span[@class="ct"]/text()')
-                    publish_time = ''
-                    if time_text:
-                        publish_time = self._parse_time(time_text[0])
-                        # 从完整文本中移除时间部分
-                        if publish_time in full_text:
-                            full_text = full_text[:full_text.rfind(publish_time)]
+                    # 移除时间部分
+                    if ct_text and ct_text[0] in full_text:
+                        full_text = full_text[:full_text.rfind(ct_text[0])]
                     
-                    # 提取点赞数
-                    like_count = 0
-                    like_match = re.search(r'赞\[(\d+)\]', full_text)
-                    if like_match:
-                        like_count = int(like_match.group(1))
-                        # 移除点赞文本
-                        full_text = re.sub(r'赞\[\d+\]', '', full_text)
+                    # 移除点赞文本
+                    full_text = re.sub(r'赞\[\d+\]', '', full_text)
                     
                     # 提取转发内容（移除用户名和其他杂项）
                     content = full_text
                     if user_name[0] + ':' in content:
                         content = content.split(user_name[0] + ':', 1)[1]
+                    elif user_name[0] in content:
+                        # 如果用户名后面没有冒号，尝试直接分割
+                        parts = content.split(user_name[0], 1)
+                        if len(parts) > 1:
+                            content = parts[1]
                     content = self._clean_text(content)
                     
                     repost_data = {
@@ -899,19 +1015,26 @@ if __name__ == '__main__':
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z')
        analyzer.analyze()
     
-    2. 限制爬取页数（避免耗时过长）：
+    2. 从.env文件读取wid和cookie（推荐）：
+       # 在.env文件中设置：
+       # WID=QbelLys5Z
+       # COOKIE=your_cookie_here
+       analyzer = WeiboDeepAnalyzer()  # 不传wid，自动从.env读取
+       analyzer.analyze()
+    
+    3. 限制爬取页数（避免耗时过长）：
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z')
        analyzer.analyze(max_comment_pages=10, max_repost_pages=10)
     
-    3. 启用图片下载：
+    4. 启用图片下载：
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z', download_images=True)
        analyzer.analyze(max_comment_pages=10, max_repost_pages=10)
     
-    4. 自定义Cookie：
+    5. 自定义Cookie：
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z', cookie='your_cookie_here')
        analyzer.analyze()
     
-    5. 只获取特定数据：
+    6. 只获取特定数据：
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z')
        analyzer.get_weibo_content()
        analyzer.get_all_comments(max_pages=5)
@@ -919,10 +1042,16 @@ if __name__ == '__main__':
     """
     
     # 示例：分析单条微博（限制各10页）
+    # 如果.env文件中设置了WID，可以直接调用 WeiboDeepAnalyzer() 而不传wid参数
     try:
-        wid = 'QbelLys5Z'  # 替换为你要分析的微博ID
+        wid = 'QbelLys5Z'  # 可以替换为你要分析的微博ID，或从.env文件读取
         
-        analyzer = WeiboDeepAnalyzer(wid=wid, download_images=False)
+        # 方式1：直接指定wid
+        # analyzer = WeiboDeepAnalyzer(wid=wid, download_images=False)
+        
+        # 方式2：从.env文件读取（推荐，更安全）
+        analyzer = WeiboDeepAnalyzer(download_images=False)  # wid从.env文件读取
+        
         analyzer.analyze(max_comment_pages=10, max_repost_pages=10)
         
     except Exception as e:
