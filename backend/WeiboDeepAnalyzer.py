@@ -35,8 +35,10 @@ def _read_env_value(key: str):
     if env_value:
         return env_value
     
-    # 从.env文件读取
-    env_path = os.path.join(os.path.dirname(__file__), '.env')
+    # 从.env文件读取（从项目根目录）
+    # 由于此文件在backend/目录下，需要向上两级目录到达项目根目录
+    project_root = os.path.dirname(os.path.dirname(__file__))
+    env_path = os.path.join(project_root, '.env')
     try:
         with open(env_path, 'r', encoding='utf-8') as f:
             for raw_line in f:
@@ -62,6 +64,49 @@ def _read_wid_from_env_file():
     return _read_env_value('WID')
 
 
+def _read_int_env_value(key: str, default=None):
+    """
+    从环境变量或.env文件读取整数类型的值
+    
+    Args:
+        key: 环境变量键名
+        default: 默认值（如果未找到或转换失败）
+    
+    Returns:
+        int: 整数值，如果未找到或转换失败则返回default
+    """
+    value = _read_env_value(key)
+    if not value:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
+def _read_bool_env_value(key: str, default=False):
+    """
+    从环境变量或.env文件读取布尔类型的值
+    
+    Args:
+        key: 环境变量键名
+        default: 默认值（如果未找到）
+    
+    Returns:
+        bool: 布尔值
+    """
+    value = _read_env_value(key)
+    if not value:
+        return default
+    # 支持多种布尔值表示方式
+    value_lower = value.lower().strip()
+    if value_lower in ('true', '1', 'yes', 'on', 'enabled'):
+        return True
+    elif value_lower in ('false', '0', 'no', 'off', 'disabled'):
+        return False
+    return default
+
+
 class WeiboDeepAnalyzer:
     """
     单条微博深度分析器
@@ -74,15 +119,15 @@ class WeiboDeepAnalyzer:
     5. 输出结构化数据（JSON + CSV）
     """
     
-    def __init__(self, wid=None, cookie=None, output_dir='weibo_analysis', download_images=False):
+    def __init__(self, wid=None, cookie=None, output_dir=None, download_images=None):
         """
         初始化分析器
         
         Args:
             wid: 微博ID（可以是数字ID或mid，可选，如果未提供则从环境变量或.env文件读取）
-            cookie: 微博Cookie（可选，从环境变量读取）
-            output_dir: 输出目录
-            download_images: 是否下载图片到本地（默认False）
+            cookie: 微博Cookie（可选，如果未提供则从环境变量或.env文件读取）
+            output_dir: 输出目录（可选，如果未提供则从环境变量或.env文件读取，默认'weibo_analysis'）
+            download_images: 是否下载图片到本地（可选，如果未提供则从环境变量或.env文件读取，默认False）
         """
         # 如果未提供wid，尝试从环境变量或.env文件读取
         if wid is None:
@@ -103,7 +148,18 @@ class WeiboDeepAnalyzer:
         
         self.wid = wid
         self.cookie = cookie if cookie else _read_cookie_from_env_file()
-        self.download_images = download_images
+        
+        # 如果未提供download_images，从环境变量读取
+        if download_images is None:
+            self.download_images = _read_bool_env_value('DOWNLOAD_IMAGES', default=False)
+        else:
+            self.download_images = download_images
+        
+        # 如果未提供output_dir，从环境变量读取
+        if output_dir is None:
+            output_dir = _read_env_value('OUTPUT_DIR')
+            if not output_dir:
+                output_dir = 'weibo_analysis'
         
         if not self.cookie:
             raise Exception('COOKIE 为空，请配置环境变量或 .env 文件中的 COOKIE')
@@ -144,6 +200,8 @@ class WeiboDeepAnalyzer:
         print(f'输出目录: {self.wid_dir}')
         if self.download_images:
             print(f'图片下载: 启用 -> {self.images_dir}')
+        else:
+            print(f'图片下载: 禁用')
         print('=' * 80)
     
     def _request(self, url, timeout=10, retry=3):
@@ -233,15 +291,41 @@ class WeiboDeepAnalyzer:
         
         try:
             print(f'  正在下载: {os.path.basename(save_path)}...', end=' ')
-            response = self._request(img_url, timeout=20)
-            if response:
+            
+            # 添加Referer头解决403防盗链问题
+            download_headers = self.headers.copy()
+            download_headers['Referer'] = 'https://weibo.cn/'
+            download_headers['Accept'] = 'image/webp,image/apng,image/*,*/*;q=0.8'
+            download_headers['Accept-Language'] = 'zh-CN,zh;q=0.9,en;q=0.8'
+            
+            # 使用带Referer的headers下载
+            response = self.session.get(img_url, headers=download_headers, timeout=20, verify=False)
+            
+            if response.status_code == 200 and response.content:
                 with open(save_path, 'wb') as f:
                     f.write(response.content)
                 print('✓')
                 time.sleep(0.5)
                 return True
+            elif response.status_code == 403:
+                # 如果403，尝试不使用Cookie下载
+                print('(403)尝试无Cookie下载...', end=' ')
+                simple_headers = {
+                    'User-Agent': self.headers['User-Agent'],
+                    'Referer': 'https://weibo.cn/'
+                }
+                retry_response = self.session.get(img_url, headers=simple_headers, timeout=20, verify=False)
+                if retry_response.status_code == 200 and retry_response.content:
+                    with open(save_path, 'wb') as f:
+                        f.write(retry_response.content)
+                    print('✓')
+                    time.sleep(0.5)
+                    return True
+                else:
+                    print(f'✗ 失败 (HTTP {retry_response.status_code})')
+                    return False
             else:
-                print('✗ 下载失败')
+                print(f'✗ 下载失败 (HTTP {response.status_code})')
                 return False
         except Exception as e:
             print(f'✗ 下载失败: {e}')
@@ -295,6 +379,7 @@ class WeiboDeepAnalyzer:
             
             # 检查是否需要展开全文
             full_text_link = weibo_block.xpath('.//a[contains(text(), "全文")]/@href')
+            full_selector = None  # 初始化变量
             if full_text_link:
                 print('  检测到长微博，正在获取全文...')
                 full_url = 'https://weibo.cn' + full_text_link[0]
@@ -308,15 +393,20 @@ class WeiboDeepAnalyzer:
                             content = content[1:].strip()
                 time.sleep(1)
             
-            # 提取图片链接
+            # 提取图片链接（使用测试成功的代码逻辑）
             images = []
             pic_links = weibo_block.xpath('.//a[contains(@href, "/mblog/picAll/")]/@href')
             if pic_links:
                 print('  检测到图片，正在提取...')
-                pic_url = 'https://weibo.cn' + pic_links[0]
+                # 使用 ?rl=2 参数，参考 test_image_download.py 的成功实现
+                pic_link = pic_links[0]
+                if '?rl=' not in pic_link:
+                    pic_url = 'https://weibo.cn' + pic_link + '?rl=2'
+                else:
+                    pic_url = 'https://weibo.cn' + pic_link
                 pic_selector = self._parse_html(pic_url)
                 if pic_selector:
-                     # 提取所有图片URL（使用large尺寸）
+                    # 提取所有图片URL（使用large尺寸）
                     img_srcs = pic_selector.xpath('//img/@src')
                     for img in img_srcs:
                         if 'sinaimg' in img:
@@ -335,6 +425,38 @@ class WeiboDeepAnalyzer:
                             self._download_image(img_url, save_path)
                 
                 time.sleep(1)
+            
+            # 提取视频链接
+            videos = []
+            # 从 span[@class="ctt"] 中查找包含视频链接的 <a> 标签
+            video_links = weibo_block.xpath('.//span[@class="ctt"]//a[contains(@href, "m.weibo.cn/s/video/show")]/@href')
+            if video_links:
+                print('  检测到视频，正在提取...')
+                for video_link in video_links:
+                    # 确保是完整的URL
+                    if video_link.startswith('http'):
+                        videos.append(video_link)
+                    elif video_link.startswith('//'):
+                        videos.append('https:' + video_link)
+                    else:
+                        videos.append(video_link)
+                print(f'  找到 {len(videos)} 个视频链接')
+            
+            # 如果全文页面也有视频链接，也需要提取
+            if full_text_link and full_selector:
+                full_video_links = full_selector.xpath('.//span[@class="ctt"]//a[contains(@href, "m.weibo.cn/s/video/show")]/@href')
+                if full_video_links:
+                    for video_link in full_video_links:
+                        if video_link.startswith('http'):
+                            if video_link not in videos:
+                                videos.append(video_link)
+                        elif video_link.startswith('//'):
+                            full_url = 'https:' + video_link
+                            if full_url not in videos:
+                                videos.append(full_url)
+                        else:
+                            if video_link not in videos:
+                                videos.append(video_link)
             
             # 提取发布时间和来源
             time_source = weibo_block.xpath('.//span[@class="ct"]/text()')
@@ -464,6 +586,8 @@ class WeiboDeepAnalyzer:
                 'content': content,
                 'images': images,
                 'image_count': len(images),
+                'videos': videos,
+                'video_count': len(videos),
                 'publish_time': publish_time,
                 'publish_source': publish_source,
                 'like_count': like_count,
@@ -476,6 +600,8 @@ class WeiboDeepAnalyzer:
             print(f'  作者: {self.weibo_data["user_name"]}')
             print(f'  内容: {content[:50]}...' if len(content) > 50 else f'  内容: {content}')
             print(f'  图片: {len(images)} 张')
+            if videos:
+                print(f'  视频: {len(videos)} 个')
             print(f'  点赞: {like_count} | 转发: {repost_count} | 评论: {comment_count}')
             
             return self.weibo_data
@@ -506,27 +632,52 @@ class WeiboDeepAnalyzer:
             print('❌ 无法访问评论页面')
             return []
         
-        # 获取评论总数和页数 - 参考WeiboCommentScrapy.py的逻辑
-        comment_count_text = first_page.xpath('//span[@class="cmt"]/text()')
+        # 优先使用 get_weibo_content() 中已提取的评论数
         total_comments = 0
-        if comment_count_text:
-            match = re.search(r'评论\[(\d+)\]', comment_count_text[0])
-            if match:
-                total_comments = int(match.group(1))
-        else:
-            # 备用方法：从页面文本中提取
-            page_text = first_page.xpath('string(.)')
-            match = re.search(r'评论\[(\d+)\]', page_text)
-            if match:
-                total_comments = int(match.group(1))
+        if self.weibo_data and 'comment_count' in self.weibo_data:
+            total_comments = self.weibo_data.get('comment_count', 0)
+            if total_comments > 0:
+                print(f'  使用已提取的评论总数: {total_comments}')
+        
+        # 如果未从weibo_data获取到，尝试从评论页面提取
+        if total_comments == 0:
+            comment_count_text = first_page.xpath('//span[@class="cmt"]/text()')
+            if comment_count_text:
+                match = re.search(r'评论\[(\d+)\]', comment_count_text[0])
+                if match:
+                    total_comments = int(match.group(1))
+            else:
+                # 备用方法：从页面文本中提取
+                page_text = first_page.xpath('string(.)')
+                match = re.search(r'评论\[(\d+)\]', page_text)
+                if match:
+                    total_comments = int(match.group(1))
         
         from math import ceil
-        total_pages = ceil(total_comments / 10) if total_comments > 0 else 1
+        
+        # 如果设置了max_pages，优先使用max_pages；否则根据total_comments计算
+        if max_pages:
+            # 如果设置了最大页数限制，直接使用该限制
+            total_pages = max_pages
+            if total_comments > 0:
+                # 如果成功提取到评论总数，取两者中的较小值
+                calculated_pages = ceil(total_comments / 10)
+                total_pages = min(calculated_pages, max_pages)
+        else:
+            # 如果没有设置max_pages，根据total_comments计算
+            if total_comments > 0:
+                total_pages = ceil(total_comments / 10)
+            else:
+                # 如果无法获取评论总数，默认爬取1页（实际可能更多，但需要动态检测）
+                total_pages = 1
+        
+        if total_comments > 0:
+            print(f'  评论总数: {total_comments}')
+        else:
+            print(f'  评论总数: {total_comments}（无法获取，将尝试爬取）')
         
         if max_pages:
-            total_pages = min(total_pages, max_pages)
-        
-        print(f'  评论总数: {total_comments}')
+            print(f'  页数限制: {max_pages} 页')
         print(f'  需爬取页数: {total_pages}')
         
         comments = []
@@ -893,12 +1044,16 @@ class WeiboDeepAnalyzer:
         weibo_file = os.path.join(self.wid_dir, f'{self.wid}_weibo.csv')
         with open(weibo_file, 'w', encoding='utf-8-sig', newline='') as f:
             writer = csv.writer(f)
-            writer.writerow(['微博ID', '作者', '内容', '图片数', '发布时间', '来源', '点赞数', '转发数', '评论数', '链接'])
+            writer.writerow(['微博ID', '作者', '内容', '图片数', '视频数', '视频链接', '发布时间', '来源', '点赞数', '转发数', '评论数', '链接'])
+            # 视频链接用分号分隔
+            video_links_str = '; '.join(self.weibo_data.get('videos', [])) if self.weibo_data.get('videos') else ''
             writer.writerow([
                 self.weibo_data.get('wid', ''),
                 self.weibo_data.get('user_name', ''),
                 self.weibo_data.get('content', ''),
                 self.weibo_data.get('image_count', 0),
+                self.weibo_data.get('video_count', 0),
+                video_links_str,
                 self.weibo_data.get('publish_time', ''),
                 self.weibo_data.get('publish_source', ''),
                 self.weibo_data.get('like_count', 0),
@@ -964,11 +1119,26 @@ class WeiboDeepAnalyzer:
         执行完整的深度分析流程
         
         Args:
-            max_comment_pages: 评论最大爬取页数
-            max_repost_pages: 转发最大爬取页数
+            max_comment_pages: 评论最大爬取页数（可选，如果未提供则从环境变量或.env文件读取）
+            max_repost_pages: 转发最大爬取页数（可选，如果未提供则从环境变量或.env文件读取）
         """
+        # 如果未提供参数，从环境变量读取
+        if max_comment_pages is None:
+            max_comment_pages = _read_int_env_value('MAX_COMMENT_PAGES', default=None)
+        
+        if max_repost_pages is None:
+            max_repost_pages = _read_int_env_value('MAX_REPOST_PAGES', default=None)
+        
         print('\n' + '=' * 80)
         print(f'开始深度分析微博: {self.wid}')
+        if max_comment_pages:
+            print(f'评论爬取限制: {max_comment_pages} 页（从 .env 文件读取）')
+        else:
+            print(f'评论爬取限制: 无限制（爬取全部）')
+        if max_repost_pages:
+            print(f'转发爬取限制: {max_repost_pages} 页（从 .env 文件读取）')
+        else:
+            print(f'转发爬取限制: 无限制（爬取全部）')
         print('=' * 80)
         
         start_time = time.time()
@@ -1015,20 +1185,34 @@ if __name__ == '__main__':
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z')
        analyzer.analyze()
     
-    2. 从.env文件读取wid和cookie（推荐）：
+    2. 从.env文件读取所有配置（推荐）：
        # 在.env文件中设置：
        # WID=QbelLys5Z
        # COOKIE=your_cookie_here
-       analyzer = WeiboDeepAnalyzer()  # 不传wid，自动从.env读取
-       analyzer.analyze()
+       # DOWNLOAD_IMAGES=false
+       # MAX_COMMENT_PAGES=10
+       # MAX_REPOST_PAGES=10
+       # OUTPUT_DIR=weibo_analysis
+       analyzer = WeiboDeepAnalyzer()  # 所有参数从.env读取
+       analyzer.analyze()  # 页数限制也从.env读取
     
     3. 限制爬取页数（避免耗时过长）：
-       analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z')
+       # 方式1：在.env文件中设置 MAX_COMMENT_PAGES=10 和 MAX_REPOST_PAGES=10
+       analyzer = WeiboDeepAnalyzer()
+       analyzer.analyze()  # 自动从.env读取页数限制
+       
+       # 方式2：手动指定页数（会覆盖.env中的设置）
+       analyzer = WeiboDeepAnalyzer()
        analyzer.analyze(max_comment_pages=10, max_repost_pages=10)
     
     4. 启用图片下载：
-       analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z', download_images=True)
-       analyzer.analyze(max_comment_pages=10, max_repost_pages=10)
+       # 方式1：在.env文件中设置 DOWNLOAD_IMAGES=true
+       analyzer = WeiboDeepAnalyzer()  # download_images从.env读取
+       analyzer.analyze()
+       
+       # 方式2：手动指定（会覆盖.env中的设置）
+       analyzer = WeiboDeepAnalyzer(download_images=True)
+       analyzer.analyze()
     
     5. 自定义Cookie：
        analyzer = WeiboDeepAnalyzer(wid='QbelLys5Z', cookie='your_cookie_here')
@@ -1041,18 +1225,23 @@ if __name__ == '__main__':
        analyzer.export_json()
     """
     
-    # 示例：分析单条微博（限制各10页）
-    # 如果.env文件中设置了WID，可以直接调用 WeiboDeepAnalyzer() 而不传wid参数
+    # 分析单条微博
+    # 如果.env文件中设置了相关参数，可以直接调用而不传参数
     try:
-        wid = 'QbelLys5Z'  # 可以替换为你要分析的微博ID，或从.env文件读取
+        # 方式1：从.env文件读取所有配置（推荐，更安全）
+        # 在.env文件中设置：
+        # WID=QbelLys5Z
+        # COOKIE=your_cookie_here
+        # DOWNLOAD_IMAGES=false
+        # MAX_COMMENT_PAGES=10
+        # MAX_REPOST_PAGES=10
+        # OUTPUT_DIR=weibo_analysis
+        analyzer = WeiboDeepAnalyzer()  # 所有参数从.env文件读取
         
-        # 方式1：直接指定wid
-        # analyzer = WeiboDeepAnalyzer(wid=wid, download_images=False)
+        # 方式2：部分参数从.env读取，部分手动指定
+        # analyzer = WeiboDeepAnalyzer(download_images=True)  # wid和cookie从.env读取，download_images手动指定
         
-        # 方式2：从.env文件读取（推荐，更安全）
-        analyzer = WeiboDeepAnalyzer(download_images=False)  # wid从.env文件读取
-        
-        analyzer.analyze(max_comment_pages=10, max_repost_pages=10)
+        analyzer.analyze()  # max_comment_pages和max_repost_pages从.env读取
         
     except Exception as e:
         print(f'\n❌ 程序执行失败: {e}')
