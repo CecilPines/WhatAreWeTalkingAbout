@@ -8,7 +8,7 @@ ToDoList：
 
 可以用网页版微博找微博样例（受限于目前程序性能，样例中所含视频最好不要超过30s），然后将网址最后的16位数字使用WebUI/test_mid2wid.py程序转换为9位的wid。
 
-如https://weibo.com/6700634492/5231122749326560最后的5231122749326560转换为wid后为Qd3DYD8go。对应的页面是https://weibo.cn/comment/Qd3DYD8go。
+如 https://weibo.com/6700634492/5231122749326560 最后的 5231122749326560 转换为 wid 后为 Qd3DYD8go。对应的页面是 https://weibo.cn/comment/Qd3DYD8go 。
 
 2、Reading-视频内容分析：
 
@@ -32,11 +32,16 @@ ToDoList：
 3、情感分析部分功能添加
 
 使用说明：
+
 项目运行主函数在WebUI/WebUI-Test.py文件里，直接运行这个文件，等待控制台输出http://localhost:8080（全名应该是这个，反正找这个8080监听端口就行）。
+
 点进去后就进入运行界面，搜索框下方蓝字部分为样例，可以直接点击运行。也可以在输入框里面输wid后点确定（wid是什么参照上文ToDoList的1）。
+
 运行完成后的结果页面中显示的图片和视频都在WebUI/static文件夹中。
 
+
 环境基本上都在requirements.txt（根目录下面和GetOutput.py文件挨着的那个）里面，但是没怎么改诸位的环境，所以理论上直接把自己那部分的文件夹中内容copy下来，自己那部分还是能在原来的自己的环境里运行的，所以如果不想配置整个项目的环境，也可以就这么只改自己的部分后再给我。
+
 除上述requirements.txt文件中依赖项外，若希望运行整个项目，还需要pip install ffmpeg和ollama pull llama3.2-vision（ollama从https://ollama.com/download这个界面下载）
 
 读微博所需cookies需要在Spidering/.env文件自行修改适配。
