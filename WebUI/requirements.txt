@@ -1,0 +1,5 @@
+opencv-python~=4.12.0.88
+pycryptodome~=3.23.0
+paddleocr~=3.3.0
+openai-whisper~=20250625
+future~=1.0.0
