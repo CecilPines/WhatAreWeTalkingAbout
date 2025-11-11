@@ -2,7 +2,3 @@
 /venv
 # 忽略.env文件
 .env
-# 忽略.idea文件夹
-.idea
-# 忽略.vscode文件夹
-.vscode
