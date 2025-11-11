@@ -1,8 +1,8 @@
-项目整合第一版：
+# 项目整合第一版：
 
-ToDoList：
+## ToDoList：
 
-1、Spidering-微博信息爬取：
+### 1、Spidering-微博信息爬取：
 
 我添加了截图和视频加载功能。但目前对于视频和图片同时存在的情况似乎不太行（ex. wid="Qd3DYD8go"）
 
@@ -10,20 +10,20 @@ ToDoList：
 
 如 https://weibo.com/6700634492/5231122749326560 最后的 5231122749326560 转换为 wid 后为 Qd3DYD8go。对应的页面是 https://weibo.cn/comment/Qd3DYD8go 。
 
-2、Reading-视频内容分析：
+### 2、Reading-视频内容分析：
 
 我把cli.py文件里main()函数改名为video_main了，然后把输入视频文件地址从命令行参数里提出来了。
 
 目前分析有点慢，最好再整快一点，看看能不能换个模型之类的。
 
-3、Picturing-微博用户画像：
+### 3、Picturing-微博用户画像：
 
 我改了main函数所在文件的名字，改成了weibo_user_picture.py，然后改了输出。读微博所需cookies改为从Spidering/.env文件中读取。
 
 需要整个热词图和简洁一点的总结文字出来，作为最终输出。
 
 
-给我自己的一点备忘：
+### 给我自己的一点备忘：
 
 1、添加运行后清空static中除progress.js文件以外所有文件功能
 
@@ -31,7 +31,7 @@ ToDoList：
 
 3、情感分析部分功能添加
 
-使用说明：
+## 使用说明：
 
 项目运行主函数在WebUI/WebUI-Test.py文件里，直接运行这个文件，等待控制台输出http://localhost:8080（全名应该是这个，反正找这个8080监听端口就行）。
 
