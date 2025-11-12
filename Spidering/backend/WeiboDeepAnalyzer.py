@@ -291,6 +291,117 @@ class WeiboDeepAnalyzer:
         text = text.replace('\u200b', '').strip()
         return text
     
+    def _get_weibo_from_mobile(self, weibo_id):
+        """
+        从 m.weibo.cn 获取完整微博信息（包括图片和视频）
+        参考 weibo.py 的 get_long_weibo() 方法实现
+        
+        Args:
+            weibo_id: 微博ID（可以是mid如'QbelLys5Z'或数字id）
+        
+        Returns:
+            dict: 包含完整图片和视频信息的字典，格式：
+                {
+                    'images': [图片URL列表],
+                    'videos': [视频URL列表],
+                    'live_photos': [Live Photo URL列表]
+                }
+            如果失败返回None
+        """
+        url = f"https://m.weibo.cn/detail/{weibo_id}"
+        try:
+            print(f'    正在访问: {url}')
+            response = self.session.get(url, headers=self.headers, verify=False, timeout=15)
+            if response.status_code != 200:
+                print(f'    访问失败: HTTP {response.status_code}')
+                return None
+            
+            html = response.text
+            
+            # 查找JSON数据（参考 weibo.py 的实现）
+            status_start = html.find('"status":')
+            if status_start == -1:
+                print('    未找到 "status" JSON数据')
+                return None
+            
+            html = html[status_start:]
+            # 查找结束位置
+            call_end = html.rfind('"call"')
+            if call_end == -1:
+                # 如果找不到 "call"，尝试其他方法
+                # 查找最后一个大括号
+                last_brace = html.rfind('}')
+                if last_brace == -1:
+                    print('    无法确定JSON结束位置')
+                    return None
+                html = html[:last_brace + 1]
+            else:
+                html = html[:call_end]
+                html = html[:html.rfind(",")]
+                html = "{" + html + "}"
+            
+            try:
+                js = json.loads(html, strict=False)
+            except json.JSONDecodeError as e:
+                print(f'    JSON解析失败: {e}')
+                return None
+            
+            weibo_info = js.get("status")
+            if not weibo_info:
+                print('    未找到 status 数据')
+                return None
+            
+            # 提取图片
+            images = []
+            if weibo_info.get("pics"):
+                for pic in weibo_info["pics"]:
+                    if pic.get("large") and pic["large"].get("url"):
+                        images.append(pic["large"]["url"])
+                    elif pic.get("url"):
+                        # 备用：如果没有large，使用url
+                        images.append(pic["url"])
+            
+            # 提取视频
+            videos = []
+            if weibo_info.get("page_info"):
+                page_info = weibo_info["page_info"]
+                if page_info.get("type") == "video":
+                    media_info = page_info.get("urls") or page_info.get("media_info")
+                    if media_info:
+                        # 按优先级获取视频URL（参考 weibo.py 的 get_video_url 方法）
+                        video_url = (media_info.get("mp4_720p_mp4") or
+                                   media_info.get("mp4_hd_url") or
+                                   media_info.get("hevc_mp4_hd") or
+                                   media_info.get("mp4_sd_url") or
+                                   media_info.get("mp4_ld_mp4") or
+                                   media_info.get("stream_url_hd") or
+                                   media_info.get("stream_url"))
+                        if video_url:
+                            videos.append(video_url)
+            
+            # 提取Live Photo
+            live_photos = []
+            if weibo_info.get("live_photo"):
+                live_photo_list = weibo_info["live_photo"]
+                if isinstance(live_photo_list, list):
+                    live_photos = live_photo_list
+                elif isinstance(live_photo_list, str):
+                    live_photos = [live_photo_list]
+            
+            result = {
+                'images': images,
+                'videos': videos,
+                'live_photos': live_photos
+            }
+            
+            print(f'    成功提取: {len(images)} 张图片, {len(videos)} 个视频, {len(live_photos)} 个Live Photo')
+            return result
+            
+        except Exception as e:
+            print(f'    从 m.weibo.cn 获取信息失败: {e}')
+            traceback.print_exc()
+            return None
+    
     def _download_image(self, img_url, save_path):
         """
         下载单张图片
@@ -635,6 +746,69 @@ class WeiboDeepAnalyzer:
                     if comment_match:
                         comment_count = int(comment_match.group(1))
             
+            # 检测是否需要从 m.weibo.cn 补充获取完整媒体信息
+            # 情况：既有视频又有图片的微博，weibo.cn可能只显示跳转链接
+            need_supplement = False
+            
+            # 情况1：如果图片数为0，尝试从 m.weibo.cn 获取（weibo.cn可能不显示图片）
+            if len(images) == 0:
+                # 检查内容中是否有跳转提示
+                content_lower = content.lower()
+                has_jump_hint = any(keyword in content_lower for keyword in ['查看图片', '查看视频', 'm.weibo.cn', 'weibo.com'])
+                # 检查是否有跳转链接
+                jump_links = weibo_block.xpath('.//a[contains(@href, "weibo.com") or contains(@href, "m.weibo.cn")]/@href')
+                
+                # 如果有跳转提示或链接，尝试补充获取
+                if has_jump_hint or jump_links:
+                    need_supplement = True
+            
+            # 情况2：如果视频数为0但检测到视频链接，也需要补充获取
+            if len(videos) == 0 and video_links:
+                need_supplement = True
+            
+            # 情况3：如果图片和视频都为0，但内容中有相关关键词，尝试补充获取
+            if len(images) == 0 and len(videos) == 0:
+                content_lower = content.lower()
+                # 检查是否有图片/视频相关的关键词
+                media_keywords = ['图片', '视频', 'photo', 'video', '图', '照']
+                if any(keyword in content_lower for keyword in media_keywords):
+                    need_supplement = True
+            
+            # 从 m.weibo.cn 补充获取完整信息
+            if need_supplement:
+                print('  检测到需要补充获取完整媒体信息（从 m.weibo.cn）...')
+                # 使用wid（mid格式）或weibo_id（数字格式）都可以访问 m.weibo.cn
+                # 优先使用wid，因为它是用户提供的原始格式
+                mobile_data = self._get_weibo_from_mobile(self.wid)
+                if mobile_data:
+                    # 合并图片（去重）
+                    mobile_images = mobile_data.get('images', [])
+                    for img in mobile_images:
+                        if img not in images:
+                            images.append(img)
+                    
+                    # 合并视频（去重）
+                    mobile_videos = mobile_data.get('videos', [])
+                    for vid in mobile_videos:
+                        if vid not in videos:
+                            videos.append(vid)
+                    
+                    if mobile_images or mobile_videos:
+                        print(f'  补充获取: {len(mobile_images)} 张图片, {len(mobile_videos)} 个视频')
+                    else:
+                        print('  补充获取: 未找到图片或视频')
+                    
+                    # 如果补充获取到图片且启用下载，下载这些图片
+                    if self.download_images and mobile_images:
+                        print('  开始下载补充获取的图片...')
+                        start_idx = len(images) - len(mobile_images) + 1
+                        for idx, img_url in enumerate(mobile_images, start_idx):
+                            save_filename = f'{self.wid}_{idx}.jpg'
+                            save_path = os.path.join(self.images_dir, save_filename)
+                            self._download_image(img_url, save_path)
+                            save_path = os.path.join(get_output_dir(), save_filename)
+                            self._download_image(img_url, save_path)
+            
             # 组装数据
             self.weibo_data = {
                 'wid': self.wid,
@@ -908,22 +1082,79 @@ class WeiboDeepAnalyzer:
             print('❌ 无法访问转发页面')
             return []
         
+        # 优先从分页元素中提取总页数（最准确的方法）
+        total_pages = 0
+        pagelist_div = first_page.xpath('//div[@id="pagelist"]')
+        if pagelist_div:
+            pagelist_text = ''.join(pagelist_div[0].xpath('string(.)'))
+            # 提取格式：15/121页 -> 121
+            page_match = re.search(r'(\d+)/(\d+)页', pagelist_text)
+            if page_match:
+                total_pages = int(page_match.group(2))
+                print(f'  从分页元素提取到总页数: {total_pages}')
+        
+        # 如果未从分页元素获取到，尝试从转发总数计算
+        if total_pages == 0:
+            total_reposts = 0
+            if self.weibo_data and 'repost_count' in self.weibo_data:
+                total_reposts = self.weibo_data.get('repost_count', 0)
+                if total_reposts > 0:
+                    print(f'  使用已提取的转发总数: {total_reposts}')
+            
+            # 如果未从weibo_data获取到，尝试从转发页面提取
+            if total_reposts == 0:
+                # 方法1：从转发页面的id="attitude"div中提取
+                attitude_div = first_page.xpath('//div[@id="attitude"]')
+                if attitude_div:
+                    attitude_text = ''.join(attitude_div[0].xpath('string(.)'))
+                    repost_match = re.search(r'转发\[(\d+)\]', attitude_text)
+                    if repost_match:
+                        total_reposts = int(repost_match.group(1))
+                
+                # 方法2：从页面文本中提取
+                if total_reposts == 0:
+                    page_text = first_page.xpath('string(.)')
+                    repost_match = re.search(r'转发\[(\d+)\]', page_text)
+                    if repost_match:
+                        total_reposts = int(repost_match.group(1))
+            
+            from math import ceil
+            
+            # 根据转发总数计算页数
+            if total_reposts > 0:
+                calculated_pages = ceil(total_reposts / 10)
+                total_pages = calculated_pages
+                print(f'  根据转发总数计算页数: {total_pages} (转发总数: {total_reposts})')
+            else:
+                print(f'  转发总数: {total_reposts}（无法获取）')
+        
+        # 如果设置了max_pages，限制总页数
+        if max_pages:
+            original_total_pages = total_pages
+            total_pages = min(total_pages, max_pages) if total_pages > 0 else max_pages
+            print(f'  页数限制: {max_pages} 页')
+            if original_total_pages > 0 and original_total_pages != total_pages:
+                print(f'  实际总页数: {original_total_pages}，限制后: {total_pages}')
+        
+        if total_pages == 0:
+            # 如果无法获取总页数，默认爬取1页（实际可能更多，但需要动态检测）
+            total_pages = 1
+            print(f'  无法获取总页数，默认爬取: {total_pages} 页')
+        else:
+            print(f'  需爬取页数: {total_pages}')
+        
         reposts = []
         seen_reposts = set()  # 用于去重：存储(user_id, publish_time)元组
-        page = 1
         
-        while True:
-            if max_pages and page > max_pages:
-                break
-            
-            print(f'  正在爬取第 {page} 页...', end=' ')
+        for page in range(1, total_pages + 1):
+            print(f'  正在爬取第 {page}/{total_pages} 页...', end=' ')
             
             page_url = f'https://weibo.cn/repost/{self.wid}?page={page}'
             selector = self._parse_html(page_url)
             
             if selector is None:
                 print('失败')
-                break
+                continue
             
             # 获取所有转发块（参考WeiboRepostSpider.py的逻辑）
             # 只选择包含span[@class='cc']和span[@class='ct']的块，这些才是真正的转发条目
@@ -1003,16 +1234,44 @@ class WeiboDeepAnalyzer:
                 except Exception as e:
                     continue
             
+            # 如果当前页没有内容，检查是否还有下一页
             if not has_content:
-                print('无内容，停止')
-                break
-            
-            print(f'获取 {page_reposts} 条转发')
-            
-            page += 1
+                # 方法1：检查分页元素中的当前页/总页数
+                pagelist_div = selector.xpath('//div[@id="pagelist"]')
+                if pagelist_div:
+                    pagelist_text = ''.join(pagelist_div[0].xpath('string(.)'))
+                    page_match = re.search(r'(\d+)/(\d+)页', pagelist_text)
+                    if page_match:
+                        current_page_num = int(page_match.group(1))
+                        total_page_num = int(page_match.group(2))
+                        if current_page_num < total_page_num:
+                            # 如果当前页小于总页数，说明还有更多页
+                            print(f'当前页无内容，但分页显示 {current_page_num}/{total_page_num}，继续...')
+                        else:
+                            # 如果当前页等于总页数，说明已经到最后一页
+                            print('无内容，已到最后一页，停止')
+                            break
+                    else:
+                        # 方法2：检查是否有"下一页"链接
+                        next_page_links = selector.xpath('//a[contains(text(), "下页") or contains(text(), "下一页")]/@href')
+                        if next_page_links:
+                            print('当前页无内容，但检测到下一页链接，继续...')
+                        else:
+                            print('无内容，停止')
+                            break
+                else:
+                    # 方法3：检查是否有"下一页"链接（备用方法）
+                    next_page_links = selector.xpath('//a[contains(text(), "下页") or contains(text(), "下一页")]/@href')
+                    if next_page_links:
+                        print('当前页无内容，但检测到下一页链接，继续...')
+                    else:
+                        print('无内容，停止')
+                        break
+            else:
+                print(f'获取 {page_reposts} 条转发')
             
             # 随机延时
-            if has_content:
+            if page < total_pages:
                 time.sleep(random.uniform(1.5, 3))
         
         self.reposts_data = reposts
