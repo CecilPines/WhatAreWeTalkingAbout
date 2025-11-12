@@ -15,6 +15,8 @@ from datetime import datetime, timedelta
 from collections import OrderedDict
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
 from GetOutput import get_output_dir
 import requests
 from lxml import etree
@@ -359,8 +361,15 @@ class WeiboDeepAnalyzer:
         options = Options()
         options.headless = True  # 不显示浏览器界面（后台运行）
 
-        # 启动浏览器
-        driver = webdriver.Chrome(options=options)
+        # 使用 webdriver-manager 自动管理 ChromeDriver
+        try:
+            service = Service(ChromeDriverManager().install())
+            driver = webdriver.Chrome(service=service, options=options)
+        except Exception as e:
+            print(f"使用 webdriver-manager 启动 Chrome 失败: {e}")
+            print("尝试使用系统默认的 ChromeDriver...")
+            # 如果 webdriver-manager 失败，尝试使用系统默认路径
+            driver = webdriver.Chrome(options=options)
         url = f'https://weibo.cn/comment/{self.wid}'
         screenshot_path = os.path.join(get_output_dir(), "screenshot.png")
 

@@ -1,46 +1,57 @@
 from gc import enable
 from unittest import result
+import os
 
 import cv2
 from Crypto.Util.RFC1751 import binary
 from paddleocr import PaddleOCR
-"""ocr = PaddleOCR(use_angle_cls=True, lang="ch")
-img_path = "./test.jpg"
-result = ocr.ocr(img_path)
-for line in result:
-    print(line)"""
-ocr = PaddleOCR(
-    # 基础设置
-    # device="gpu",
-    # use_tensorrt=True,
-    enable_mkldnn=True,
-    cpu_threads=2,
 
-    lang="ch",
+# 延迟初始化 OCR 对象
+_ocr = None
 
-    use_doc_orientation_classify=False,
-    use_doc_unwarping=False,
-    use_textline_orientation=False,
+def get_ocr():
+    """获取或创建 OCR 实例（延迟初始化）"""
+    global _ocr
+    if _ocr is None:
+        # 检查自定义模型路径是否存在
+        rec_model_dir = "C:/Users/Cecil/.paddlex/official_models/PP-OCRv5_server_rec"
+        det_model_dir = "C:/Users/Cecil/.paddlex/official_models/PP-OCRv5_server_det"
+        
+        # 如果模型目录存在，使用自定义路径；否则使用默认配置让 PaddleOCR 自动下载
+        if os.path.exists(rec_model_dir) and os.path.exists(det_model_dir):
+            _ocr = PaddleOCR(
+                # 基础设置
+                # device="gpu",
+                # use_tensorrt=True,
+                enable_mkldnn=True,
+                cpu_threads=2,
+                lang="ch",
+                use_doc_orientation_classify=False,
+                use_doc_unwarping=False,
+                use_textline_orientation=False,
+                text_recognition_model_name="PP-OCRv5_server_rec",
+                text_detection_model_name="PP-OCRv5_server_det",
+                text_recognition_model_dir=rec_model_dir,
+                text_detection_model_dir=det_model_dir,
+            )
+        else:
+            # 使用默认配置，让 PaddleOCR 自动下载模型
+            _ocr = PaddleOCR(
+                enable_mkldnn=True,
+                cpu_threads=2,
+                lang="ch",
+                use_doc_orientation_classify=False,
+                use_doc_unwarping=False,
+                use_textline_orientation=False,
+            )
+    return _ocr
 
-    # 输入优化
-    # text_det_limit_type="min",
-    # text_det_limit_side_len=640,
-    # text_recognition_batch_size=1,
-    # text_det_thresh = 0.4,
-    # text_det_box_thresh = 0.7,
-    # text_det_unclip_ratio = 1.2,
-
-    text_recognition_model_name="PP-OCRv5_server_rec",
-    text_detection_model_name="PP-OCRv5_server_det",
-    text_recognition_model_dir="C:/Users/Cecil/.paddlex/official_models/PP-OCRv5_server_rec",  # 文本识别模型
-    text_detection_model_dir="C:/Users/Cecil/.paddlex/official_models/PP-OCRv5_server_det",  # 文本检测模型
-
-)
 def process_ocr(img_path):
     """gray = cv2.cvtColor(img_path, cv2.COLOR_BGR2GRAY)
     _, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
     denoised = cv2.medianBlur(binary, 3)
     cv2.imwrite(tmp_output, img_path)"""
+    ocr = get_ocr()
     result = ocr.predict(img_path)
     # print(result[0].keys())
     # for line in result[0]["rec_texts"]:

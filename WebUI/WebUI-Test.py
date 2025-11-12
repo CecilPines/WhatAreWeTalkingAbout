@@ -1,12 +1,17 @@
 from flask import Flask, render_template, request, jsonify, redirect, url_for
 import os
+import sys
+
+# 将项目根目录添加到 Python 路径
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 # Flask 实例化时配置静态文件夹
 app = Flask(__name__,template_folder=os.path.join(os.path.dirname(__file__), 'WebUI', 'templates'))
 
 import threading
 import time
-import os
 import pandas
 from dotenv import load_dotenv, set_key, dotenv_values
 
@@ -36,7 +41,12 @@ def Spidering():
     progress["message"] = "正在爬取微博内容..."
 
     analyzer = WeiboDeepAnalyzer.WeiboDeepAnalyzer()  # 所有参数从.env文件读取
-    analyzer.analyze()  # max_comment_pages和max_repost_pages从.env读取
+    # 检查分析是否成功
+    if not analyzer.analyze():  # max_comment_pages和max_repost_pages从.env读取
+        progress["message"] = "爬取失败：无法获取微博内容"
+        progress["step"] = 0
+        return
+    
     # 获取wid
     wid = get_wid_from_env()
     # time.sleep(2)
@@ -44,19 +54,52 @@ def Spidering():
     result_data["screenshot"] = "screenshot.png"
 
     spidering_result_path = os.path.join(get_project_root(), "Spidering", "backend", "weibo_analysis", wid)
-    df_weibo = pandas.read_csv(os.path.join(spidering_result_path, wid+"_weibo.csv"), encoding='utf-8')
-    df_comments = pandas.read_csv(os.path.join(spidering_result_path, wid+"_comments.csv"), encoding='utf-8')
-    df_repost = pandas.read_csv(os.path.join(spidering_result_path, wid+"_reposts.csv"), encoding='utf-8')
+    
+    # 检查文件是否存在
+    weibo_file = os.path.join(spidering_result_path, wid+"_weibo.csv")
+    comments_file = os.path.join(spidering_result_path, wid+"_comments.csv")
+    reposts_file = os.path.join(spidering_result_path, wid+"_reposts.csv")
+    
+    if not os.path.exists(weibo_file):
+        progress["message"] = f"错误：找不到文件 {weibo_file}"
+        progress["step"] = 0
+        return
+    
+    # 读取CSV文件，如果文件不存在则创建空的DataFrame
+    try:
+        df_weibo = pandas.read_csv(weibo_file, encoding='utf-8')
+    except FileNotFoundError:
+        df_weibo = pandas.DataFrame()
+        print(f"警告：文件 {weibo_file} 不存在，使用空DataFrame")
+    
+    try:
+        df_comments = pandas.read_csv(comments_file, encoding='utf-8') if os.path.exists(comments_file) else pandas.DataFrame()
+    except Exception as e:
+        df_comments = pandas.DataFrame()
+        print(f"警告：读取评论文件失败: {e}")
+    
+    try:
+        df_repost = pandas.read_csv(reposts_file, encoding='utf-8') if os.path.exists(reposts_file) else pandas.DataFrame()
+    except Exception as e:
+        df_repost = pandas.DataFrame()
+        print(f"警告：读取转发文件失败: {e}")
 
     result_data["page_text"] = []
-    for index, row in df_weibo.iterrows():
-        result_data["page_text"].append(row.tolist())
-    for index, row in df_comments.iterrows():
-        result_data["page_text"].append(row.tolist())
+    # 安全地添加微博内容
+    if not df_weibo.empty:
+        for index, row in df_weibo.iterrows():
+            result_data["page_text"].append(row.tolist())
+    # 安全地添加评论内容
+    if not df_comments.empty:
+        for index, row in df_comments.iterrows():
+            result_data["page_text"].append(row.tolist())
 
     global picture_users_list
-    picture_users_list += df_comments['评论者ID'].tolist()
-    picture_users_list += df_repost['转发者ID'].tolist()
+    # 安全地提取评论者ID和转发者ID
+    if not df_comments.empty and '评论者ID' in df_comments.columns:
+        picture_users_list += df_comments['评论者ID'].tolist()
+    if not df_repost.empty and '转发者ID' in df_repost.columns:
+        picture_users_list += df_repost['转发者ID'].tolist()
     print(picture_users_list)
 
     # 若爬取出图片和视频
@@ -73,22 +116,32 @@ def Spidering():
 
     """若有爬取到视频链接则下载视频并添加"""
     result_data["page_videos"] = []
-    page_url_list = df_weibo['视频链接'][0]
-    # 获取视频的真实 URL
-    index = 1
-    try:
-        for page_url in page_url_list:
-            video_url = get_video_url(page_url)
-            if video_url:
-                # 设置保存路径
-                output_path = os.path.join(get_output_dir(), "weibo_video.mp4")
-                # 下载视频
-                download_video(video_url, output_path)
-            result_data["page_videos"].append("weibo_video_" + str(index) + ".mp4")
-            index += 1
-    except Exception:
-        print("No Video")
-        pass
+    # 安全地获取视频链接
+    if not df_weibo.empty and '视频链接' in df_weibo.columns:
+        page_url_list = df_weibo['视频链接'].iloc[0] if len(df_weibo) > 0 else []
+        # 获取视频的真实 URL
+        index = 1
+        try:
+            # 如果 page_url_list 是字符串，转换为列表
+            if isinstance(page_url_list, str):
+                page_url_list = [page_url_list] if page_url_list else []
+            elif not isinstance(page_url_list, list):
+                page_url_list = []
+            
+            for page_url in page_url_list:
+                video_url = get_video_url(page_url)
+                if video_url:
+                    # 设置保存路径
+                    output_path = os.path.join(get_output_dir(), "weibo_video.mp4")
+                    # 下载视频
+                    download_video(video_url, output_path)
+                result_data["page_videos"].append("weibo_video_" + str(index) + ".mp4")
+                index += 1
+        except Exception:
+            print("No Video")
+            pass
+    else:
+        print("没有视频链接数据")
     if result_data["page_videos"]:
         video_flag = True
 
