@@ -267,6 +267,29 @@ class WeiboDeepAnalyzer:
             print(f'HTML解析失败: {e}')
             return None
     
+    def _get_video_base_url(self, video_url):
+        """
+        提取视频URL的基础部分（去掉查询参数），用于去重
+        例如: https://f.video.weibocdn.com/u0/xxx.mp4?label=... -> https://f.video.weibocdn.com/u0/xxx.mp4
+        """
+        try:
+            # 分割URL，取问号之前的部分
+            base_url = video_url.split('?')[0]
+            return base_url
+        except Exception:
+            return video_url
+    
+    def _is_video_duplicate(self, video_url, existing_videos):
+        """
+        检查视频URL是否与已有视频重复（基于基础URL，忽略查询参数）
+        """
+        base_url = self._get_video_base_url(video_url)
+        for existing_video in existing_videos:
+            existing_base = self._get_video_base_url(existing_video)
+            if base_url == existing_base:
+                return True
+        return False
+    
     def _parse_time(self, time_str):
         """解析时间字符串为标准格式"""
         try:
@@ -370,19 +393,48 @@ class WeiboDeepAnalyzer:
                 print('    未找到 status 数据')
                 return None
             
-            # 提取图片
+            # 提取图片和视频（视频可能在 pics 数组中的 videoSrc 字段）
             images = []
+            videos = []
+            
+            # 调试：打印 pics 数组信息
             if weibo_info.get("pics"):
-                for pic in weibo_info["pics"]:
+                pics_count = len(weibo_info["pics"])
+                print(f'    找到 pics 数组，包含 {pics_count} 个元素')
+                
+                for idx, pic in enumerate(weibo_info["pics"]):
+                    print(f'    处理 pics[{idx}]: type={pic.get("type")}, 有videoSrc={bool(pic.get("videoSrc"))}, 有large={bool(pic.get("large"))}')
+                    
+                    # 检查是否有视频（通过 type == "video" 或 videoSrc 字段）
+                    if pic.get("type") == "video" or pic.get("videoSrc"):
+                        video_url = pic.get("videoSrc")
+                        print(f'      检测到视频元素: videoSrc={video_url[:80] if video_url else None}...')
+                        if video_url and video_url not in videos:
+                            videos.append(video_url)
+                            print(f'      ✓ 从 pics[{idx}] 提取视频URL成功 (type={pic.get("type")})')
+                        elif not video_url:
+                            print(f'      警告: pics[{idx}] 标记为视频但 videoSrc 为空')
+                        elif video_url in videos:
+                            print(f'      跳过: 视频URL已存在')
+                    
+                    # 提取图片URL（如果存在）
+                    # 注意：同一个 pic 可能同时有 videoSrc 和图片URL（同时包含视频和图片）
                     if pic.get("large") and pic["large"].get("url"):
-                        images.append(pic["large"]["url"])
+                        img_url = pic["large"]["url"]
+                        if img_url not in images:
+                            images.append(img_url)
+                            print(f'      ✓ 从 pics[{idx}] 提取图片URL: {img_url[:60]}...')
                     elif pic.get("url"):
                         # 备用：如果没有large，使用url
-                        images.append(pic["url"])
+                        img_url = pic["url"]
+                        if img_url not in images:
+                            images.append(img_url)
+                            print(f'      ✓ 从 pics[{idx}] 提取图片URL(备用): {img_url[:60]}...')
+            else:
+                print('    未找到 pics 数组')
             
-            # 提取视频
-            videos = []
-            if weibo_info.get("page_info"):
+            # 方法2：从 page_info 中提取视频（传统方法，用于只有视频没有图片的情况）
+            if not videos and weibo_info.get("page_info"):
                 page_info = weibo_info["page_info"]
                 if page_info.get("type") == "video":
                     media_info = page_info.get("urls") or page_info.get("media_info")
@@ -397,6 +449,7 @@ class WeiboDeepAnalyzer:
                                    media_info.get("stream_url"))
                         if video_url:
                             videos.append(video_url)
+                            print(f'    从 page_info 找到视频URL')
             
             # 提取Live Photo
             live_photos = []
@@ -413,7 +466,31 @@ class WeiboDeepAnalyzer:
                 'live_photos': live_photos
             }
             
+            print(f'\n    调试: _get_weibo_from_mobile() 提取结果汇总:')
+            print(f'      图片数量: {len(images)}')
+            if images:
+                for idx, img in enumerate(images[:3]):  # 只显示前3张
+                    print(f'        图片[{idx}]: {img[:80]}...')
+                if len(images) > 3:
+                    print(f'        ... 还有 {len(images) - 3} 张图片')
+            
+            print(f'      视频数量: {len(videos)}')
+            if videos:
+                for idx, vid in enumerate(videos):
+                    print(f'        视频[{idx}]: {vid[:100]}...')
+            else:
+                print(f'        未找到视频')
+            
+            print(f'      Live Photo数量: {len(live_photos)}')
             print(f'    成功提取: {len(images)} 张图片, {len(videos)} 个视频, {len(live_photos)} 个Live Photo')
+            
+            # 调试：打印返回的字典内容
+            print(f'\n    调试: _get_weibo_from_mobile() 返回的字典:')
+            print(f'      result.keys() = {list(result.keys())}')
+            print(f'      result["videos"] = {result["videos"]}')
+            print(f'      result["videos"] 类型 = {type(result["videos"])}')
+            print(f'      result["videos"] 长度 = {len(result["videos"])}')
+            
             return result
             
         except Exception as e:
@@ -650,42 +727,94 @@ class WeiboDeepAnalyzer:
             # 检测是否有视频提示（通过检查是否有视频跳转链接）
             video_links = weibo_block.xpath('.//span[@class="ctt"]//a[contains(@href, "m.weibo.cn/s/video/show")]/@href')
             has_video_hint = bool(video_links)
+            print(f'  调试: 检测视频跳转链接 - 当前页面找到 {len(video_links)} 个链接')
+            if video_links:
+                print(f'  调试: 视频跳转链接示例: {video_links[0][:80]}...')
             
             # 如果全文页面也有视频链接提示
             if full_text_link and full_selector:
                 full_video_links = full_selector.xpath('.//span[@class="ctt"]//a[contains(@href, "m.weibo.cn/s/video/show")]/@href')
+                print(f'  调试: 全文页面检测视频跳转链接 - 找到 {len(full_video_links)} 个链接')
                 if full_video_links:
                     has_video_hint = True
+                    print(f'  调试: 全文页面视频跳转链接示例: {full_video_links[0][:80]}...')
             
-            # 检查内容中是否有视频相关的关键词（用于检测同时有视频和图片的微博）
-            content_lower = content.lower()
-            video_keywords = ['视频', 'video', '查看视频', '播放视频']
-            has_video_keyword = any(keyword in content_lower for keyword in video_keywords)
+            print(f'  调试: has_video_hint = {has_video_hint}, 当前图片数 = {len(images)}')
             
-            # 如果检测到视频提示或关键词，或者有图片（可能同时有视频），都尝试从 m.weibo.cn 获取视频
+            # 如果检测到视频提示，或者有图片（可能同时有视频），都尝试从 m.weibo.cn 获取视频
             # 注意：即使没有明确提示，也尝试获取（因为有些微博可能同时有视频和图片）
-            should_fetch_video = has_video_hint or has_video_keyword or len(images) > 0
+            should_fetch_video = has_video_hint or len(images) > 0
+            print(f'  调试: should_fetch_video = {should_fetch_video} (has_video_hint={has_video_hint}, len(images)={len(images)})')
             
             if should_fetch_video:
                 if has_video_hint:
                     print('  检测到视频链接，正在从 m.weibo.cn 获取实际视频文件URL...')
-                elif has_video_keyword:
-                    print('  检测到视频关键词，正在从 m.weibo.cn 获取实际视频文件URL...')
                 else:
                     print('  检测到图片，尝试从 m.weibo.cn 获取视频信息（可能同时包含视频）...')
                 
                 mobile_data = self._get_weibo_from_mobile(self.wid)
                 if mobile_data:
                     mobile_videos = mobile_data.get('videos', [])
+                    print(f'  调试: 从 m.weibo.cn 获取到 {len(mobile_videos)} 个视频URL（过滤前）')
+                    print(f'  调试: mobile_data类型: {type(mobile_data)}, keys: {list(mobile_data.keys())}')
+                    if mobile_videos:
+                        for idx, v in enumerate(mobile_videos):
+                            print(f'  调试: mobile_videos[{idx}]: {v[:80] if len(v) > 80 else v}...')
+                            # 检查每个视频URL是否匹配过滤条件
+                            url_lower = v.lower()
+                            matches = []
+                            for ext in ['.mp4', '.m3u8', '.flv', 'video.weibocdn.com']:
+                                if ext in url_lower:
+                                    matches.append(ext)
+                            print(f'  调试: mobile_videos[{idx}] 匹配的扩展名: {matches}')
+                    
                     # 只保留实际视频文件URL（.mp4、.m3u8等），过滤掉跳转链接
                     actual_video_urls = [v for v in mobile_videos if any(ext in v.lower() for ext in ['.mp4', '.m3u8', '.flv', 'video.weibocdn.com'])]
-                    videos.extend(actual_video_urls)
+                    print(f'  调试: 过滤后实际视频文件URL数量: {len(actual_video_urls)}')
+                    if actual_video_urls:
+                        for idx, v in enumerate(actual_video_urls):
+                            print(f'  调试: actual_video_urls[{idx}]: {v[:100]}...')
+                    
+                    print(f'  调试: 添加前 videos 列表长度: {len(videos)}')
+                    # 使用智能去重：基于URL基础部分（忽略查询参数）
+                    added_count = 0
+                    for vid_url in actual_video_urls:
+                        if not self._is_video_duplicate(vid_url, videos):
+                            videos.append(vid_url)
+                            added_count += 1
+                            print(f'  调试: 添加视频（去重后）: {vid_url[:100]}...')
+                        else:
+                            base_url = self._get_video_base_url(vid_url)
+                            print(f'  调试: 跳过重复视频（基础URL已存在）: {base_url[:100]}...')
+                    print(f'  调试: 添加后 videos 列表长度: {len(videos)} (新增 {added_count} 个)')
                     if videos:
-                        print(f'  找到 {len(videos)} 个实际视频文件')
+                        print(f'  ✓ 找到 {len(videos)} 个实际视频文件')
+                        for idx, v in enumerate(videos):
+                            print(f'    视频[{idx}]: {v[:100]}...')
                     else:
-                        if has_video_hint or has_video_keyword:
-                            print('  未找到实际视频文件URL（可能视频已删除或无法访问）')
-                        # 如果没有明确视频提示，不输出警告（因为可能确实没有视频）
+                        if has_video_hint:
+                            print('  ✗ 未找到实际视频文件URL（可能视频已删除或无法访问）')
+                            print(f'  调试: 原始视频URL列表: {mobile_videos}')
+                            print(f'  调试: 过滤后的视频URL列表: {actual_video_urls}')
+                        else:
+                            print('  调试: 未找到视频（可能确实没有视频，只有图片）')
+                            print(f'  调试: mobile_videos = {mobile_videos}')
+                            print(f'  调试: actual_video_urls = {actual_video_urls}')
+                    
+                    # 如果从 m.weibo.cn 获取到了图片，合并到现有图片列表（去重）
+                    mobile_images = mobile_data.get('images', [])
+                    print(f'  调试: 从 m.weibo.cn 获取到 {len(mobile_images)} 张图片')
+                    added_count = 0
+                    for img in mobile_images:
+                        if img not in images:
+                            images.append(img)
+                            added_count += 1
+                    if added_count > 0:
+                        print(f'  ✓ 从 m.weibo.cn 补充获取: {added_count} 张图片')
+                else:
+                    print('  ✗ 从 m.weibo.cn 获取数据失败')
+            else:
+                print('  调试: 未检测到视频提示且没有图片，跳过 m.weibo.cn 获取')
             
             # 提取发布时间和来源
             time_source = weibo_block.xpath('.//span[@class="ct"]/text()')
@@ -830,9 +959,9 @@ class WeiboDeepAnalyzer:
                 if any(keyword in content_lower for keyword in image_keywords):
                     need_supplement = True
             
-            # 从 m.weibo.cn 补充获取图片信息（视频已在主流程中获取）
+            # 从 m.weibo.cn 补充获取图片和视频信息
             if need_supplement:
-                print('  检测到需要补充获取图片信息（从 m.weibo.cn）...')
+                print('  检测到需要补充获取媒体信息（从 m.weibo.cn）...')
                 mobile_data = self._get_weibo_from_mobile(self.wid)
                 if mobile_data:
                     # 合并图片（去重）
@@ -845,6 +974,29 @@ class WeiboDeepAnalyzer:
                         print(f'  补充获取: {len(mobile_images)} 张图片')
                     else:
                         print('  补充获取: 未找到图片')
+                    
+                    # 合并视频（智能去重：基于URL基础部分，忽略查询参数）
+                    mobile_videos = mobile_data.get('videos', [])
+                    print(f'  调试: need_supplement 中获取到的视频数量: {len(mobile_videos)}')
+                    if mobile_videos:
+                        # 只保留实际视频文件URL（.mp4、.m3u8等），过滤掉跳转链接
+                        actual_video_urls = [v for v in mobile_videos if any(ext in v.lower() for ext in ['.mp4', '.m3u8', '.flv', 'video.weibocdn.com'])]
+                        print(f'  调试: need_supplement 中过滤后的视频数量: {len(actual_video_urls)}')
+                        added_count = 0
+                        for vid in actual_video_urls:
+                            if not self._is_video_duplicate(vid, videos):
+                                videos.append(vid)
+                                added_count += 1
+                                print(f'  调试: 补充添加视频（去重后）: {vid[:100]}...')
+                            else:
+                                base_url = self._get_video_base_url(vid)
+                                print(f'  调试: 跳过重复视频（基础URL已存在）: {base_url[:100]}...')
+                        if added_count > 0:
+                            print(f'  补充获取: {added_count} 个视频（去重后）')
+                        else:
+                            print(f'  补充获取: 未添加新视频（所有视频都已存在）')
+                    else:
+                        print('  补充获取: 未找到视频')
                     
                     # 如果补充获取到图片且启用下载，下载这些图片
                     if self.download_images and mobile_images:
@@ -877,6 +1029,15 @@ class WeiboDeepAnalyzer:
                     self._download_video(video_url, output_path)
             
             # 组装数据
+            print(f'\n  调试: 准备组装数据...')
+            print(f'  调试: 图片列表长度: {len(images)}, 视频列表长度: {len(videos)}')
+            if videos:
+                print(f'  调试: 视频URL列表:')
+                for idx, v in enumerate(videos):
+                    print(f'    视频[{idx}]: {v}')
+            else:
+                print(f'  调试: 视频URL列表为空')
+            
             self.weibo_data = {
                 'wid': self.wid,
                 'weibo_id': weibo_id,
@@ -895,13 +1056,17 @@ class WeiboDeepAnalyzer:
                 'weibo_url': f'https://weibo.cn/comment/{self.wid}',
             }
             
-            print(f'✓ 微博内容提取完成')
+            print(f'\n✓ 微博内容提取完成')
             print(f'  作者: {self.weibo_data["user_name"]}')
             print(f'  内容: {content[:50]}...' if len(content) > 50 else f'  内容: {content}')
             print(f'  图片: {len(images)} 张')
+            print(f'  视频: {len(videos)} 个')
             if videos:
-                print(f'  视频: {len(videos)} 个')
+                for idx, v in enumerate(videos):
+                    print(f'    视频[{idx}]: {v[:100]}...')
             print(f'  点赞: {like_count} | 转发: {repost_count} | 评论: {comment_count}')
+            print(f'  调试: weibo_data["videos"] = {self.weibo_data["videos"]}')
+            print(f'  调试: weibo_data["video_count"] = {self.weibo_data["video_count"]}')
             
             return self.weibo_data
             
@@ -1426,17 +1591,30 @@ class WeiboDeepAnalyzer:
         """导出CSV格式数据"""
         # 导出微博内容
         weibo_file = os.path.join(self.wid_dir, f'{self.wid}_weibo.csv')
+        
+        # 调试：打印要导出的视频信息
+        videos_list = self.weibo_data.get('videos', [])
+        video_count = self.weibo_data.get('video_count', 0)
+        print(f'\n  调试: 准备导出CSV...')
+        print(f'  调试: weibo_data中的视频数量: {video_count}')
+        print(f'  调试: weibo_data中的视频列表: {videos_list}')
+        if videos_list:
+            for idx, v in enumerate(videos_list):
+                print(f'  调试: 视频[{idx}]: {v[:100]}...')
+        
         with open(weibo_file, 'w', encoding='utf-8-sig', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['微博ID', '作者', '内容', '图片数', '视频数', '视频链接', '发布时间', '来源', '点赞数', '转发数', '评论数', '链接'])
             # 视频链接用分号分隔
-            video_links_str = '; '.join(self.weibo_data.get('videos', [])) if self.weibo_data.get('videos') else ''
-            writer.writerow([
+            video_links_str = '; '.join(videos_list) if videos_list else ''
+            print(f'  调试: 视频链接字符串（CSV）: {video_links_str[:200] if len(video_links_str) > 200 else video_links_str}')
+            
+            row_data = [
                 self.weibo_data.get('wid', ''),
                 self.weibo_data.get('user_name', ''),
                 self.weibo_data.get('content', ''),
                 self.weibo_data.get('image_count', 0),
-                self.weibo_data.get('video_count', 0),
+                video_count,
                 video_links_str,
                 self.weibo_data.get('publish_time', ''),
                 self.weibo_data.get('publish_source', ''),
@@ -1444,7 +1622,9 @@ class WeiboDeepAnalyzer:
                 self.weibo_data.get('repost_count', 0),
                 self.weibo_data.get('comment_count', 0),
                 self.weibo_data.get('weibo_url', ''),
-            ])
+            ]
+            print(f'  调试: CSV行数据 - 视频数: {row_data[4]}, 视频链接长度: {len(row_data[5])}')
+            writer.writerow(row_data)
         
         # 导出评论
         comments_file = os.path.join(self.wid_dir, f'{self.wid}_comments.csv')
