@@ -3,7 +3,6 @@ from pathlib import Path
 import json
 from typing import Any
 import logging
-import pkg_resources
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +15,18 @@ class Config:
         # First try to find default_config.json in the user-provided directory
         self.default_config = self.config_dir / "default_config.json"
         
-        # If not found, fallback to package's default config
+        # If not found, fallback to package's default config using relative path
         if not self.default_config.exists():
             try:
-                default_config_path = pkg_resources.resource_filename('video_analyzer', 'config/default_config.json')
-                self.default_config = Path(default_config_path)
-                logger.debug(f"Using packaged default config from {self.default_config}")
+                # Get the directory where this config.py file is located
+                current_file_dir = Path(__file__).parent
+                # default_config.json is in the config subdirectory relative to config.py
+                default_config_path = current_file_dir / "config" / "default_config.json"
+                if default_config_path.exists():
+                    self.default_config = default_config_path
+                    logger.debug(f"Using packaged default config from {self.default_config}")
+                else:
+                    raise FileNotFoundError(f"Default config file not found at {default_config_path}")
             except Exception as e:
                 logger.error(f"Error finding default config: {e}")
                 raise

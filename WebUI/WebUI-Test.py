@@ -114,38 +114,27 @@ def Spidering():
     if result_data["page_images"]:
         image_flag = True
 
-    """若有爬取到视频链接则下载视频并添加"""
+    """直接使用 WeiboDeepAnalyzer 已下载的视频文件"""
     result_data["page_videos"] = []
-    # 安全地获取视频链接
-    if not df_weibo.empty and '视频链接' in df_weibo.columns:
-        page_url_list = df_weibo['视频链接'].iloc[0] if len(df_weibo) > 0 else []
-        # 获取视频的真实 URL
-        index = 1
-        try:
-            # 如果 page_url_list 是字符串，转换为列表
-            if isinstance(page_url_list, str):
-                page_url_list = [page_url_list] if page_url_list else []
-            elif not isinstance(page_url_list, list):
-                page_url_list = []
-            
-            for page_url in page_url_list:
-                video_url = get_video_url(page_url)
-                if video_url:
-                    # 设置保存路径
-                    output_path = os.path.join(get_output_dir(), "weibo_video.mp4")
-                    # 下载视频
-                    download_video(video_url, output_path)
-                result_data["page_videos"].append("weibo_video_" + str(index) + ".mp4")
-                index += 1
-        except Exception:
-            print("No Video")
-            pass
-    else:
-        print("没有视频链接数据")
+    # 从 get_output_dir() 目录中查找 WeiboDeepAnalyzer 下载的视频文件
+    # 视频文件名格式：{wid}_{idx}.mp4
+    output_dir = get_output_dir()
+    if os.path.exists(output_dir):
+        # 遍历目录中的文件，查找以 wid 开头且以视频扩展名结尾的文件
+        video_extensions = ['.mp4', '.m3u8', '.flv']
+        for filename in os.listdir(output_dir):
+            if filename.startswith(wid) and any(filename.lower().endswith(ext) for ext in video_extensions):
+                result_data["page_videos"].append(filename)
+                print(f"找到视频文件: {filename}")
+    
     if result_data["page_videos"]:
         video_flag = True
+        print(f"共找到 {len(result_data['page_videos'])} 个视频文件")
+    else:
+        print("未找到视频文件（可能未启用视频下载功能）")
 
     progress["step"] = 25
+    print(f"Spidering阶段完成，progress step: {progress['step']}")
 
 
 def Reading():
@@ -153,16 +142,45 @@ def Reading():
     progress["message"] = "正在读取微博数据..."
     # time.sleep(2)
     result_data["reading_texts"] = []
-    print(image_flag, video_flag)
+    print(f"Reading阶段开始 - image_flag: {image_flag}, video_flag: {video_flag}")
 
-    if image_flag:
-        for image in result_data["page_images"]:
-            result_data["reading_texts"].append(process_ocr(os.path.join(get_output_dir(), image)))
-    if video_flag:
-        for video in result_data["page_videos"]:
-            result_data["reading_texts"].append(video_main(os.path.join(get_output_dir(), video)))
+    try:
+        if image_flag:
+            print(f"开始处理 {len(result_data['page_images'])} 张图片...")
+            for image in result_data["page_images"]:
+                image_path = os.path.join(get_output_dir(), image)
+                print(f"处理图片: {image_path}")
+                try:
+                    ocr_result = process_ocr(image_path)
+                    result_data["reading_texts"].append(ocr_result)
+                    print(f"图片 {image} 处理完成")
+                except Exception as e:
+                    print(f"处理图片 {image} 时出错: {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        if video_flag:
+            print(f"开始处理 {len(result_data['page_videos'])} 个视频...")
+            for video in result_data["page_videos"]:
+                video_path = os.path.join(get_output_dir(), video)
+                print(f"处理视频: {video_path}")
+                try:
+                    video_result = video_main(video_path)
+                    result_data["reading_texts"].append(video_result)
+                    print(f"视频 {video} 处理完成")
+                except Exception as e:
+                    print(f"处理视频 {video} 时出错: {e}")
+                    import traceback
+                    traceback.print_exc()
+        
+        print(f"Reading阶段完成，共处理 {len(result_data['reading_texts'])} 个结果")
+    except Exception as e:
+        print(f"Reading阶段发生错误: {e}")
+        import traceback
+        traceback.print_exc()
 
     progress["step"] = 50
+    print(f"Reading阶段结束，progress step: {progress['step']}")
 
 
 def Analysising():
@@ -201,11 +219,36 @@ def Run(keyword):
     video_flag = False
     image_flag = False
 
-    Spidering()
-    Reading()
-    Analysising()
-    Picturing()
-    progress["status"] = "done"
+    try:
+        print("=" * 80)
+        print("开始执行任务流程...")
+        print("=" * 80)
+        
+        print("\n[1/2] 执行 Spidering 阶段...")
+        Spidering()
+        print(f"Spidering 完成，progress step: {progress['step']}, status: {progress['status']}")
+        
+        print("\n[2/2] 执行 Reading 阶段...")
+        Reading()
+        print(f"Reading 完成，progress step: {progress['step']}, status: {progress['status']}")
+        
+        Analysising()
+        # Picturing()
+        
+        print("\n" + "=" * 80)
+        print("所有阶段执行完成，设置 status 为 done")
+        print("=" * 80)
+        progress["status"] = "done"
+        progress["message"] = "分析完成！"
+        print(f"最终状态 - status: {progress['status']}, step: {progress['step']}, message: {progress['message']}")
+        
+    except Exception as e:
+        print(f"\n执行过程中发生错误: {e}")
+        import traceback
+        traceback.print_exc()
+        progress["status"] = "done"
+        progress["message"] = f"执行完成（有错误: {str(e)}）"
+        print(f"错误处理后状态 - status: {progress['status']}, step: {progress['step']}")
 
 
 @app.route('/')

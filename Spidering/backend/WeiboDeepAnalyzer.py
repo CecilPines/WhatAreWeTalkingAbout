@@ -134,7 +134,7 @@ class WeiboDeepAnalyzer:
     5. 输出结构化数据（JSON + CSV）
     """
     
-    def __init__(self, wid=None, cookie=None, output_dir=None, download_images=None):
+    def __init__(self, wid=None, cookie=None, output_dir=None, download_images=None, download_videos=None):
         """
         初始化分析器
         
@@ -143,6 +143,7 @@ class WeiboDeepAnalyzer:
             cookie: 微博Cookie（可选，如果未提供则从环境变量或.env文件读取）
             output_dir: 输出目录（可选，如果未提供则从环境变量或.env文件读取，默认'weibo_analysis'）
             download_images: 是否下载图片到本地（可选，如果未提供则从环境变量或.env文件读取，默认False）
+            download_videos: 是否下载视频到本地（可选，如果未提供则从环境变量或.env文件读取，默认False）
         """
         # 如果未提供wid，尝试从环境变量或.env文件读取
         if wid is None:
@@ -171,6 +172,12 @@ class WeiboDeepAnalyzer:
             self.download_images = _read_bool_env_value('DOWNLOAD_IMAGES', default=False)
         else:
             self.download_images = download_images
+        
+        # 如果未提供download_videos，从环境变量读取
+        if download_videos is None:
+            self.download_videos = _read_bool_env_value('DOWNLOAD_VIDEOS', default=False)
+        else:
+            self.download_videos = download_videos
         
         # 如果未提供output_dir，从环境变量读取
         if output_dir is None:
@@ -206,6 +213,12 @@ class WeiboDeepAnalyzer:
             if not os.path.exists(self.images_dir):
                 os.makedirs(self.images_dir)
         
+        # 视频保存目录
+        if self.download_videos:
+            self.videos_dir = os.path.join(self.wid_dir, 'videos')
+            if not os.path.exists(self.videos_dir):
+                os.makedirs(self.videos_dir)
+        
         # 数据存储
         self.weibo_data = {}
         self.comments_data = []
@@ -219,6 +232,12 @@ class WeiboDeepAnalyzer:
             print(f'图片下载: 启用 -> {self.images_dir}')
         else:
             print(f'图片下载: 禁用')
+        if self.download_videos:
+            # 视频实际保存到 get_output_dir()，与 test_download_video.py 一致
+            video_output_dir = get_output_dir()
+            print(f'视频下载: 启用 -> {video_output_dir}')
+        else:
+            print(f'视频下载: 禁用')
         print('=' * 80)
     
     def _request(self, url, timeout=10, retry=3):
@@ -459,6 +478,37 @@ class WeiboDeepAnalyzer:
             print(f'✗ 下载失败: {e}')
             return False
     
+    def _download_video(self, video_url, output_path):
+        """
+        下载视频并保存到指定路径
+        参考 test_download_video.py 的实现
+        
+        Args:
+            video_url: 视频URL
+            output_path: 保存路径
+        
+        Returns:
+            bool: 是否下载成功
+        """
+        if os.path.exists(output_path):
+            print(f'  视频已存在: {os.path.basename(output_path)}')
+            return True
+        
+        try:
+            response = requests.get(video_url, stream=True)
+            if response.status_code == 200:
+                with open(output_path, 'wb') as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        f.write(chunk)
+                print(f"  视频已下载到 {output_path}")
+                return True
+            else:
+                print(f"  下载失败，HTTP 状态码: {response.status_code}")
+                return False
+        except Exception as e:
+            print(f"  下载失败: {e}")
+            return False
+    
     # ==================== 微博内容提取 ====================
     
     def get_weibo_screenshot(self):
@@ -595,37 +645,47 @@ class WeiboDeepAnalyzer:
                 
                 time.sleep(1)
             
-            # 提取视频链接
+            # 提取视频链接（只保留实际视频文件URL，不提取跳转链接）
             videos = []
-            # 从 span[@class="ctt"] 中查找包含视频链接的 <a> 标签
+            # 检测是否有视频提示（通过检查是否有视频跳转链接）
             video_links = weibo_block.xpath('.//span[@class="ctt"]//a[contains(@href, "m.weibo.cn/s/video/show")]/@href')
-            if video_links:
-                print('  检测到视频，正在提取...')
-                for video_link in video_links:
-                    # 确保是完整的URL
-                    if video_link.startswith('http'):
-                        videos.append(video_link)
-                    elif video_link.startswith('//'):
-                        videos.append('https:' + video_link)
-                    else:
-                        videos.append(video_link)
-                print(f'  找到 {len(videos)} 个视频链接')
+            has_video_hint = bool(video_links)
             
-            # 如果全文页面也有视频链接，也需要提取
+            # 如果全文页面也有视频链接提示
             if full_text_link and full_selector:
                 full_video_links = full_selector.xpath('.//span[@class="ctt"]//a[contains(@href, "m.weibo.cn/s/video/show")]/@href')
                 if full_video_links:
-                    for video_link in full_video_links:
-                        if video_link.startswith('http'):
-                            if video_link not in videos:
-                                videos.append(video_link)
-                        elif video_link.startswith('//'):
-                            full_url = 'https:' + video_link
-                            if full_url not in videos:
-                                videos.append(full_url)
-                        else:
-                            if video_link not in videos:
-                                videos.append(video_link)
+                    has_video_hint = True
+            
+            # 检查内容中是否有视频相关的关键词（用于检测同时有视频和图片的微博）
+            content_lower = content.lower()
+            video_keywords = ['视频', 'video', '查看视频', '播放视频']
+            has_video_keyword = any(keyword in content_lower for keyword in video_keywords)
+            
+            # 如果检测到视频提示或关键词，或者有图片（可能同时有视频），都尝试从 m.weibo.cn 获取视频
+            # 注意：即使没有明确提示，也尝试获取（因为有些微博可能同时有视频和图片）
+            should_fetch_video = has_video_hint or has_video_keyword or len(images) > 0
+            
+            if should_fetch_video:
+                if has_video_hint:
+                    print('  检测到视频链接，正在从 m.weibo.cn 获取实际视频文件URL...')
+                elif has_video_keyword:
+                    print('  检测到视频关键词，正在从 m.weibo.cn 获取实际视频文件URL...')
+                else:
+                    print('  检测到图片，尝试从 m.weibo.cn 获取视频信息（可能同时包含视频）...')
+                
+                mobile_data = self._get_weibo_from_mobile(self.wid)
+                if mobile_data:
+                    mobile_videos = mobile_data.get('videos', [])
+                    # 只保留实际视频文件URL（.mp4、.m3u8等），过滤掉跳转链接
+                    actual_video_urls = [v for v in mobile_videos if any(ext in v.lower() for ext in ['.mp4', '.m3u8', '.flv', 'video.weibocdn.com'])]
+                    videos.extend(actual_video_urls)
+                    if videos:
+                        print(f'  找到 {len(videos)} 个实际视频文件')
+                    else:
+                        if has_video_hint or has_video_keyword:
+                            print('  未找到实际视频文件URL（可能视频已删除或无法访问）')
+                        # 如果没有明确视频提示，不输出警告（因为可能确实没有视频）
             
             # 提取发布时间和来源
             time_source = weibo_block.xpath('.//span[@class="ct"]/text()')
@@ -762,23 +822,17 @@ class WeiboDeepAnalyzer:
                 if has_jump_hint or jump_links:
                     need_supplement = True
             
-            # 情况2：如果视频数为0但检测到视频链接，也需要补充获取
-            if len(videos) == 0 and video_links:
-                need_supplement = True
-            
-            # 情况3：如果图片和视频都为0，但内容中有相关关键词，尝试补充获取
-            if len(images) == 0 and len(videos) == 0:
+            # 情况3：如果图片为0，但内容中有相关关键词，尝试补充获取图片
+            if len(images) == 0:
                 content_lower = content.lower()
-                # 检查是否有图片/视频相关的关键词
-                media_keywords = ['图片', '视频', 'photo', 'video', '图', '照']
-                if any(keyword in content_lower for keyword in media_keywords):
+                # 检查是否有图片相关的关键词
+                image_keywords = ['图片', 'photo', '图', '照']
+                if any(keyword in content_lower for keyword in image_keywords):
                     need_supplement = True
             
-            # 从 m.weibo.cn 补充获取完整信息
+            # 从 m.weibo.cn 补充获取图片信息（视频已在主流程中获取）
             if need_supplement:
-                print('  检测到需要补充获取完整媒体信息（从 m.weibo.cn）...')
-                # 使用wid（mid格式）或weibo_id（数字格式）都可以访问 m.weibo.cn
-                # 优先使用wid，因为它是用户提供的原始格式
+                print('  检测到需要补充获取图片信息（从 m.weibo.cn）...')
                 mobile_data = self._get_weibo_from_mobile(self.wid)
                 if mobile_data:
                     # 合并图片（去重）
@@ -787,16 +841,10 @@ class WeiboDeepAnalyzer:
                         if img not in images:
                             images.append(img)
                     
-                    # 合并视频（去重）
-                    mobile_videos = mobile_data.get('videos', [])
-                    for vid in mobile_videos:
-                        if vid not in videos:
-                            videos.append(vid)
-                    
-                    if mobile_images or mobile_videos:
-                        print(f'  补充获取: {len(mobile_images)} 张图片, {len(mobile_videos)} 个视频')
+                    if mobile_images:
+                        print(f'  补充获取: {len(mobile_images)} 张图片')
                     else:
-                        print('  补充获取: 未找到图片或视频')
+                        print('  补充获取: 未找到图片')
                     
                     # 如果补充获取到图片且启用下载，下载这些图片
                     if self.download_images and mobile_images:
@@ -808,6 +856,25 @@ class WeiboDeepAnalyzer:
                             self._download_image(img_url, save_path)
                             save_path = os.path.join(get_output_dir(), save_filename)
                             self._download_image(img_url, save_path)
+            
+            # 如果启用视频下载，下载视频
+            if self.download_videos and videos:
+                print('  开始下载视频...')
+                for idx, video_url in enumerate(videos, 1):
+                    # 确定文件扩展名
+                    if '.mp4' in video_url.lower():
+                        ext = '.mp4'
+                    elif '.m3u8' in video_url.lower():
+                        ext = '.m3u8'
+                    elif '.flv' in video_url.lower():
+                        ext = '.flv'
+                    else:
+                        ext = '.mp4'  # 默认使用mp4
+                    
+                    # 使用 get_output_dir() 作为保存目录，与 test_download_video.py 一致
+                    save_filename = f'{self.wid}_{idx}{ext}'
+                    output_path = os.path.join(get_output_dir(), save_filename)
+                    self._download_video(video_url, output_path)
             
             # 组装数据
             self.weibo_data = {
