@@ -645,7 +645,30 @@ class WeiboDeepAnalyzer:
         
         try:
             # 获取微博主体内容块
-            weibo_block = selector.xpath("//div[@class='c'][@id]")[0]
+            weibo_blocks = selector.xpath("//div[@class='c'][@id]")
+            if not weibo_blocks:
+                # 检查是否是登录页面（Cookie失效）
+                login_check = selector.xpath("//input[@name='password'] | //a[contains(text(), '登录')]")
+                if login_check:
+                    print('❌ Cookie 已失效，页面跳转到登录页面，请更新 Cookie')
+                else:
+                    # 检查页面是否包含错误信息
+                    error_text = selector.xpath("//text()[contains(., '不存在') or contains(., '删除') or contains(., '错误')]")
+                    if error_text:
+                        print(f'❌ 页面提示：{error_text[0][:100]}...')
+                    else:
+                        # 保存页面内容用于调试
+                        debug_file = os.path.join(self.wid_dir, 'debug_page.html')
+                        try:
+                            with open(debug_file, 'w', encoding='utf-8') as f:
+                                f.write(etree.tostring(selector, encoding='unicode', pretty_print=True))
+                            print(f'❌ 无法找到微博内容块，页面结构可能已改变')
+                            print(f'   调试信息已保存到: {debug_file}')
+                        except:
+                            pass
+                return None
+            
+            weibo_block = weibo_blocks[0]
             
             # 提取微博ID
             weibo_id = weibo_block.xpath('@id')[0]

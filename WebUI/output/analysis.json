@@ -5,8 +5,8 @@
     "whisper_model": "medium",
     "frames_per_minute": 60,
     "duration_processed": null,
-    "frames_extracted": 12,
-    "frames_processed": 12,
+    "frames_extracted": 10,
+    "frames_processed": 10,
     "start_stage": 1,
     "audio_language": null,
     "transcription_successful": false
@@ -14,43 +14,37 @@
   "transcript": null,
   "frame_analyses": [
     {
-      "response": "Error analyzing frame 0: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB4FF560>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 0: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AA8740>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 1: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB5088C0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 1: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AAB560>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 2: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB544590>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 2: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AA9820>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 3: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB50A840>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 3: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AB9280>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 4: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB546D50>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 4: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AA85C0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 5: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB50A090>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 5: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AB8080>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 6: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB545C70>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 6: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AAA180>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 7: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB5080E0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 7: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AB8CE0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 8: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB545520>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 8: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AA9AC0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     },
     {
-      "response": "Error analyzing frame 9: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB50A090>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
-    },
-    {
-      "response": "Error analyzing frame 10: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB546750>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
-    },
-    {
-      "response": "Error analyzing frame 11: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB50B7A0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+      "response": "Error analyzing frame 9: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AB8AD0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
     }
   ],
   "video_description": {
-    "response": "Error reconstructing video: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000019CDB4FEFF0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
+    "response": "Error reconstructing video: API request failed: HTTPConnectionPool(host='localhost', port=11434): Max retries exceeded with url: /api/generate (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002E981AA8DD0>: Failed to establish a new connection: [WinError 10061] \u7531\u4e8e\u76ee\u6807\u8ba1\u7b97\u673a\u79ef\u6781\u62d2\u7edd\uff0c\u65e0\u6cd5\u8fde\u63a5\u3002'))"
   }
 }
