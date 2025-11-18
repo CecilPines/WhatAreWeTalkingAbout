@@ -14,18 +14,18 @@ def extract_user_features(user_data):
     # 1. 基本信息
     basic_info = {
         '用户ID': user_info.get('id', '未知'),
-        '昵称': user_info.get('screen_name', '未知'),
+        '昵称': user_info.get('nickname', '未知'),
         '性别': user_info.get('gender', '未知'),
         '地区': user_info.get('location', '未知'),
-        '简介': user_info.get('description', '无简介'),
-        '生日': user_info.get('birthday', '未知')
+        '简介': user_info.get('intro', '无简介'),
+
     }
 
     # 2. 社交属性
     social_info = {
-        '粉丝数': user_info.get('followers_count', 0),
-        '关注数': user_info.get('follow_count', 0),
-        '微博数': user_info.get('statuses_count', 0),
+        '粉丝数': user_info.get('fans', 0),
+        '关注数': user_info.get('follow', 0),
+        '微博数': user_info.get('weibo', 0),
         '认证类型': user_info.get('verified_type', '未认证'),
         '认证信息': user_info.get('verified_reason', '无')
     }
@@ -34,7 +34,7 @@ def extract_user_features(user_data):
     # （实际应用中可使用jieba分词+词云分析）
     content_keywords = []
     for weibo in weibo_list[:5]:  # 取前5条微博
-        text = weibo.get('mblog', {}).get('text', '')
+        text = weibo.get('content', {})
         # 简化处理：提取非HTML标签的文本（实际需清洗HTML）
         clean_text = text.replace('<br />', ' ').strip()
         if clean_text:
@@ -45,9 +45,9 @@ def extract_user_features(user_data):
     for weibo in weibo_list[:5]:
         mblog = weibo.get('mblog', {})
         interactions.append({
-            '点赞': mblog.get('attitudes_count', 0),
-            '转发': mblog.get('reposts_count', 0),
-            '评论': mblog.get('comments_count', 0)
+            '点赞': mblog.get('likes', 0),
+            '转发': mblog.get('reposts', 0),
+            '评论': mblog.get('comments', 0)
         })
     avg_interaction = {
         '平均点赞': sum(i['点赞'] for i in interactions) / len(interactions) if interactions else 0,

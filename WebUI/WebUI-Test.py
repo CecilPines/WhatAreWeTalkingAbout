@@ -218,8 +218,12 @@ def Analyzing():
 def Picturing():
     """用户画像阶段"""
     progress["message"] = "正在绘制用户画像..."
-    # time.sleep(2)
-    result_data["picturing_texts"].append(get_weibo_users_pic(picture_users_list))
+    result = get_weibo_users_pic(picture_users_list)
+    time.sleep(2)
+    if result != "":
+        with open(os.path.join(get_output_dir(), "overall_user_analysis.txt"), "r", encoding="utf-8") as f:
+            for line in f:
+                result_data["picturing_texts"].append(line + "\n")
     result_data["picturing_imgs"] = ["picturing.png"]
     progress["step"] = 100
     progress["message"] = "分析完成！"
