@@ -1,0 +1,242 @@
+{
+  "metadata": {
+    "client": "ollama",
+    "model": "llama3.2-vision",
+    "whisper_model": "medium",
+    "frames_per_minute": 60,
+    "duration_processed": null,
+    "frames_extracted": 14,
+    "frames_processed": 14,
+    "start_stage": 1,
+    "audio_language": "en",
+    "transcription_successful": true
+  },
+  "transcript": {
+    "text": " Don't you think?",
+    "segments": [
+      {
+        "text": " Don't you think?",
+        "start": 9.17,
+        "end": 9.89,
+        "words": [
+          {
+            "word": " Don't",
+            "start": 9.17,
+            "end": 9.57,
+            "probability": 0.5290748551487923
+          },
+          {
+            "word": " you",
+            "start": 9.57,
+            "end": 9.71,
+            "probability": 0.21126316487789154
+          },
+          {
+            "word": " think?",
+            "start": 9.71,
+            "end": 9.89,
+            "probability": 0.7023042440414429
+          }
+        ]
+      }
+    ]
+  },
+  "frame_analyses": [
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:08:25.9385214Z",
+      "response": "Frame 0\nThe scene is set in a soccer stadium, with a soccer player in the foreground. The player is wearing a black uniform with white stripes and has short brown hair. He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n\nIn the background, there is a red banner with white text that reads \"FLYE\" and a crowd of spectators watching the game. The atmosphere appears to be intense and exciting, with the player's movement and expression conveying a sense of urgency and focus.\n\nKey continuation points:\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player's body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer's attention to the action on the field.",
+      "done": true,
+      "done_reason": "stop",
+      "total_duration": 45930794200,
+      "load_duration": 6302806900,
+      "prompt_eval_count": 346,
+      "prompt_eval_duration": 3089829800,
+      "eval_count": 195,
+      "eval_duration": 32501911900
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:09:05.052212Z",
+      "response": "Frame 1\nThe scene is set in a soccer stadium, with a soccer player in the foreground. The player is wearing a black uniform with white stripes and has short brown hair. He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n\nIn the background, there is a red banner with white text that reads \"FLYE\" and a crowd of spectators watching the game. The atmosphere appears to be intense and exciting, with the player's movement and expression conveying a sense of urgency and focus.\n\nKey continuation points:\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player's body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer's attention to the action on the field.",
+      "done": true,
+      "done_reason": "stop",
+      "total_duration": 36935493300,
+      "load_duration": 121046900,
+      "prompt_eval_count": 544,
+      "prompt_eval_duration": 1095920100,
+      "eval_count": 195,
+      "eval_duration": 31629733000
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:09:50.0144124Z",
+      "response": "Frame 2\nThe scene is set in a soccer stadium, with a soccer player in the foreground. The player is wearing a black uniform with white stripes and has short brown hair. He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n\nIn the background, there is a red banner with white text that reads \"FLYE\" and a crowd of spectators watching the game. The atmosphere appears to be intense and exciting, with the player's movement and expression conveying a sense of urgency and focus.\n\nKey continuation points:\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player's body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer's attention to the action on the field.\n\nI hope this helps you understand the scene better. Let me know if you have any further questions or if you'd like me to continue describing the next frames.",
+      "done": true,
+      "done_reason": "stop",
+      "total_duration": 42895149900,
+      "load_duration": 90380800,
+      "prompt_eval_count": 742,
+      "prompt_eval_duration": 1303918000,
+      "eval_count": 227,
+      "eval_duration": 37443115800
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:10:29.4279315Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLYE\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player\u2019s body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer\u2019s attention to the action on the field.",
+      "done": true,
+      "done_reason": "stop",
+      "total_duration": 37353718800,
+      "load_duration": 181397300,
+      "prompt_eval_count": 972,
+      "prompt_eval_duration": 1482293500,
+      "eval_count": 194,
+      "eval_duration": 31715181900
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:11:29.1572314Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player\u2019s body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer\u2019s attention to the action on the field.\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team's players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player's kick and the ball\u2019s trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game\u2019s intensity or",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 57652268800,
+      "load_duration": 89663400,
+      "prompt_eval_count": 1169,
+      "prompt_eval_duration": 1967626000,
+      "eval_count": 300,
+      "eval_duration": 51540910900
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:12:28.206624Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player\u2019s body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer\u2019s attention to the action on the field.\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team\u2019s players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player\u2019s kick and the ball\u2019s trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game\u2019s intensity or",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 56954318500,
+      "load_duration": 87878600,
+      "prompt_eval_count": 1473,
+      "prompt_eval_duration": 2159228200,
+      "eval_count": 300,
+      "eval_duration": 50781021400
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:13:30.0072374Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player\u2019s body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer\u2019s attention to the action on the field.\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team\u2019s players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player\u2019s kick and the ball\u2019s trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game\u2019s intensity or",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 59724524300,
+      "load_duration": 88252300,
+      "prompt_eval_count": 1777,
+      "prompt_eval_duration": 2763455400,
+      "eval_count": 300,
+      "eval_duration": 52797833600
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:14:34.2544683Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player\u2019s body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer\u2019s attention to the action on the field.\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team\u2019s players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player\u2019s kick and the ball\u2019s trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game\u2019s intensity or",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 62193388100,
+      "load_duration": 88456200,
+      "prompt_eval_count": 2081,
+      "prompt_eval_duration": 3308471300,
+      "eval_count": 300,
+      "eval_duration": 54707012600
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:15:39.2481695Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* Watch for the player's kick and the ball's trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game's intensity or\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team's players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player's kick and the ball's trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game's intensity or\n\n**Frame 9:**\n\nThe image shows a soccer game in progress, with players from both teams on the\u00a0...\n\n**Frame 10:**\n\nThe image shows a\u00a0...\u00a0",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 62940286900,
+      "load_duration": 88934600,
+      "prompt_eval_count": 2385,
+      "prompt_eval_duration": 3580821200,
+      "eval_count": 300,
+      "eval_duration": 55330087200
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:16:45.8386841Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* Watch for the player's kick and the ball's trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game's intensity or\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team's players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player's kick and the ball\u2019s trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game\u2019s intensity or\n\n**Frame 10:**\n\nThe image shows a\u00a0...\u00a0\n\n\nYour Tasks\nYou are viewing Frame [X] of this video sequence. Your goal is to document what you observe",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 64514039100,
+      "load_duration": 84055100,
+      "prompt_eval_count": 2689,
+      "prompt_eval_duration": 4283386400,
+      "eval_count": 300,
+      "eval_duration": 56215553200
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:17:53.2039491Z",
+      "response": "The image shows a soccer player in a black uniform with white stripes, running towards the left side of the frame. He has short brown hair and is wearing red shoes. The background is a green field with a white line, and there is a red banner with white text reading \"FLY\" in the top-left corner. The atmosphere appears to be intense and exciting, with the player's movement and expression suggesting that he is about to score a goal or make a crucial play.\n\n**Key Observations:**\n\n* The player's movement and expression suggest that he is about to score a goal or make a crucial play.\n* The crowd's reaction and the player\u2019s body language indicate that the game is highly competitive and suspenseful.\n* The red banner with white text adds a pop of color and visual interest to the scene, drawing the viewer\u2019s attention to the action on the field.\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team\u2019s players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player\u2019s kick and the ball\u2019s trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game\u2019s intensity or\n* The player is about to kick the ball, and the crowd is on",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 65286080300,
+      "load_duration": 89981200,
+      "prompt_eval_count": 2992,
+      "prompt_eval_duration": 4475562200,
+      "eval_count": 300,
+      "eval_duration": 56784619800
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:18:59.3869401Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs bent in a sprinting position.\n* The crowd is watching the game, creating an intense and exciting atmosphere.\n\n**Continuation Points:**\n\n* Watch for the player's kick and the ball's trajectory.\n* Pay attention to the reactions of the players and the crowd.\n* Note any changes in the game's intensity or\n\n**Next Frame:**\n\n* The player is about to kick the ball, and the crowd is on the edge of their seats.\n* The opposing team's players are trying to block the shot, but the player is determined to score.\n* The game is getting more intense, and the outcome is far from certain.\n\n**Key Continuation Points:**\n\n* Watch for the player's kick and the ball's\n* The player is about to kick the ball, and the\n* The player is about to kick the ball, and the\n* The player is about to kick the ball, and the\n* The player is about to kick the ball, and the\n* The player is about to kick the ball,",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 64113775500,
+      "load_duration": 85283700,
+      "prompt_eval_count": 3296,
+      "prompt_eval_duration": 5143256700,
+      "eval_count": 300,
+      "eval_duration": 54937143400
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:20:11.4673211Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs\n* The crowd is watching the game, creating an intense and\n* The red\n* The player's\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 70016974500,
+      "load_duration": 84119700,
+      "prompt_eval_count": 3599,
+      "prompt_eval_duration": 5736324400,
+      "eval_count": 300,
+      "eval_duration": 60250467900
+    },
+    {
+      "model": "llama3.2-vision",
+      "created_at": "2025-11-05T13:21:13.1677999Z",
+      "response": "The image shows a soccer game in progress, with players from both teams on the field. The scene is set in a stadium, with a red banner with white text reading \"FLY\" visible in the background.\n\n**Key Observations:**\n\n* The player in the foreground is wearing a black uniform with white stripes and has short brown hair.\n* He is running towards the left side of the frame, with his arms outstretched and his legs\n* The crowd is watching the\n* The red\n* The player's\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n* The\n",
+      "done": true,
+      "done_reason": "length",
+      "total_duration": 59645778300,
+      "load_duration": 85687300,
+      "prompt_eval_count": 3902,
+      "prompt_eval_duration": 6098585000,
+      "eval_count": 300,
+      "eval_duration": 49254931900
+    }
+  ],
+  "video_description": {
+    "model": "llama3.2-vision",
+    "created_at": "2025-11-05T13:22:05.8459954Z",
+    "response": "**VIDEO SUMMARY**\n\n**Duration:** 12 minutes\n\n**Opening Description:**\n\nThe video begins with a close-up shot of a soccer player in a black uniform with white stripes, running towards the left side of the frame. He has short brown hair and is wearing red shoes. The background is a green field with a white line, and there is a red banner with white text reading \"FLY\" in the top-left corner. The atmosphere appears intense and exciting, with the player's movement and expression suggesting he is about to score a goal or make a crucial play.\n\n**Narrative Development:**\n\nAs the player runs, the camera follows him, capturing his determination and focus. The crowd watches the game, creating an intense and exciting atmosphere. The player's movement and expression suggest he is about to score a goal or make a crucial play. The opposing team's players try to block the shot, but the player is determined to score. The game becomes more intense, and the outcome is far from certain.\n\n**Technical Elements:**\n\nThe camera follows the player in a dynamic shot, capturing his movement and expression. The editing transitions smoothly between shots, maintaining the intensity and excitement of the game. The lighting is consistent, with the green field and white line providing a clear visual backdrop. The composition is well-balanced, with the red banner adding a pop of color and visual interest.\n\n**Closing Observations:**\n\nThe video ends with the player about to kick the ball, and the crowd on the edge of their seats. The opposing team's players are trying to block the shot, but the player is determined to score. The game is getting more intense, and the outcome is far from certain. The final shot is a close-up of the player's face, capturing his determination and focus.\n\n**Note:** This summary is based on direct observation of the first frame combined with detailed notes from subsequent frames.",
+    "done": true,
+    "done_reason": "stop",
+    "total_duration": 50622084100,
+    "load_duration": 92673000,
+    "prompt_eval_count": 4096,
+    "prompt_eval_duration": 4787570400,
+    "eval_count": 383,
+    "eval_duration": 45649248800,
+    "chinese_summary": "**\u89c6\u9891\u7b80\u4ecb**\n\n**\u65f6\u957f:** 12 \u5206\u949f\n\n**\u5f00\u573a\u63cf\u8ff0:**\n\n\u89c6\u9891\u5f00\u59cb\u65f6\uff0c\u955c\u5934\u5bf9\u7126\u5728\u4e00\u540d\u7a7f\u7740\u9ed1\u8272\u548c\u767d\u8272\u6761\u7eb9\u7684\u8db3\u7403\u8fd0\u52a8\u5458\u8eab\u4e0a\uff0c\u4ed6\u6b63\u5728\u5411\u955c\u5934\u5de6\u4fa7\u8dd1\u53bb\u3002\u4ed6\u6709\u77ed\u53d1\uff0c\u7a7f\u7740\u7ea2\u8272\u7403\u978b\u3002\u80cc\u666f\u662f\u7eff\u8272\u7684\u7403\u573a\u548c\u767d\u8272\u7684\u7ebf\uff0c\u9876\u90e8\u5de6\u4fa7\u6709\u4e00\u4e2a\u7ea2\u8272\u7684\u6a2a\u5e45\uff0c\u4e0a\u9762\u5199\u7740\u201cFLY\u201d\u767d\u8272\u5b57\u4f53\u3002\u6c1b\u56f4\u770b\u8d77\u6765\u5f88\u7d27\u5f20\u548c\u5174\u594b\uff0c\u8fd0\u52a8\u5458\u7684\u8fd0\u52a8\u548c\u8868\u60c5\u8868\u660e\u4ed6\u5373\u5c06\u5c04\u8fdb\u7403\u95e8\u6216\u505a\u51fa\u5173\u952e\u52a8\u4f5c\u3002\n\n**\u53d9\u4e8b\u53d1\u5c55:**\n\n\u8fd0\u52a8\u5458\u8dd1\u52a8\u65f6\uff0c\u955c\u5934\u8ddf\u968f\u7740\u4ed6\uff0c\u6355\u6349\u5230\u4ed6\u7684\u51b3\u5fc3\u548c\u4e13\u6ce8\u3002\u89c2\u4f17\u5728\u89c2\u770b\u6bd4\u8d5b\uff0c\u521b\u9020\u51fa\u7d27\u5f20\u548c\u5174\u594b\u7684\u6c1b\u56f4\u3002\u8fd0\u52a8\u5458\u7684\u8fd0\u52a8\u548c\u8868\u60c5\u8868\u660e\u4ed6\u5373\u5c06\u5c04\u8fdb\u7403\u95e8\u6216\u505a\u51fa\u5173\u952e\u52a8\u4f5c\u3002\u5bf9\u65b9\u961f\u7684\u7403\u5458\u8bd5\u56fe\u963b\u6b62\u5c04\u95e8\uff0c\u4f46\u8fd0\u52a8\u5458\u575a\u5b9a\u5730\u8981\u5c04\u8fdb\u7403\u95e8\u3002\u6bd4\u8d5b\u53d8\u5f97\u66f4\u52a0\u7d27\u5f20\uff0c\u7ed3\u679c\u5c1a\u672a\u786e\u5b9a\u3002\n\n**\u6280\u672f\u5143\u7d20:**\n\n\u955c\u5934\u8ddf\u968f\u8fd0\u52a8\u5458\uff0c\u6355\u6349\u5230\u4ed6\u7684\u8fd0\u52a8\u548c\u8868\u60c5\u3002\u526a\u8f91\u8fc7\u6e21\u987a\u6ed1\uff0c\u4fdd\u6301\u6bd4\u8d5b\u7684\u7d27\u5f20\u548c\u5174\u594b\u3002\u7167\u660e\u4e00\u81f4\uff0c\u7eff\u8272\u7403\u573a\u548c\u767d\u8272\u7ebf\u63d0\u4f9b\u6e05\u6670\u7684\u89c6\u89c9\u80cc\u666f\u3002\u7ec4\u6210\u662f\u5e73\u8861\u7684\uff0c\u7ea2\u8272\u6a2a\u5e45\u6dfb\u52a0\u4e86\u4e00\u70b9\u989c\u8272\u548c\u89c6\u89c9\u8da3\u5473\u3002\n\n**\u7ed3\u5c3e\u89c2\u5bdf:**\n\n\u89c6\u9891\u7ed3\u675f\u65f6\uff0c\u8fd0\u52a8\u5458\u5373\u5c06\u8e22\u7403\uff0c\u89c2\u4f17\u5750\u5728\u7403\u573a\u4e0a\u3002\u5bf9\u65b9\u961f\u7684\u7403\u5458\u8bd5\u56fe\u963b\u6b62\u5c04\u95e8\uff0c\u4f46\u8fd0\u52a8\u5458\u575a\u5b9a\u5730\u8981\u5c04\u8fdb\u7403\u95e8\u3002\u6bd4\u8d5b\u53d8\u5f97\u66f4\u52a0\u7d27\u5f20\uff0c\u7ed3\u679c\u5c1a\u672a\u786e\u5b9a\u3002\u6700\u540e\u4e00\u5e27\u662f\u8fd0\u52a8\u5458\u8138\u90e8\u7684\u8fd1\u8ddd\u79bb\u955c\u5934\uff0c\u6355\u6349\u5230\u4ed6\u7684\u51b3\u5fc3\u548c\u4e13\u6ce8\u3002\n\n**\u6ce8\u610f:** \u8fd9\u4e2a\u7b80\u4ecb\u57fa\u4e8e\u5bf9\u7b2c\u4e00\u5e27\u7684\u76f4\u63a5\u89c2\u5bdf\u548c\u540e\u7eed\u5e27\u7684\u8be6\u7ec6\u7b14\u8bb0\u3002"
+  }
+}
