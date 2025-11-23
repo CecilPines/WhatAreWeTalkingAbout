@@ -110,9 +110,9 @@ def Spidering():
     global picture_users_list
     # 安全地提取评论者ID和转发者ID
     if not df_comments.empty and '评论者ID' in df_comments.columns:
-        picture_users_list += df_comments['评论者ID'].tolist()
+        picture_users_list += df_comments['评论者ID'].dropna().tolist()
     if not df_repost.empty and '转发者ID' in df_repost.columns:
-        picture_users_list += df_repost['转发者ID'].tolist()
+        picture_users_list += df_repost['转发者ID'].dropna().tolist()
     print(picture_users_list)
 
     # 若爬取出图片和视频
